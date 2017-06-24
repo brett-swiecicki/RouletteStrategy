@@ -41,7 +41,7 @@ public:
 			++total_rolls;
 			//Limit is reached when the size of the dynamic solution didn't increase as it is anticipated it will due to what is considered optimal
 			//So when total_rolls becomes 2, it is anticipated that dynamic solution size is 1
-			if (dynamic_solution.size() != (total_rolls - 1)) {
+			if ((dynamic_solution.size() != (total_rolls - 1)) || (total_rolls == 11)) {
 				limit_reached = true;
 			}
 		}
@@ -70,18 +70,7 @@ public:
 		cout << std::setprecision(3);
 		cout << std::fixed; //Disable scientific notation for large numbers
 		const char separator = ' ';
-		const int colWidth = 16;
-		cout << left << setw(colWidth) << setfill(separator) << "Roll";
-		cout << left << setw(colWidth) << setfill(separator) << "Stake";
-		cout << left << setw(colWidth) << setfill(separator) << "Cum. Stake";
-		cout << left << setw(colWidth) << setfill(separator) << "Profit";
-		cout << left << setw(colWidth) << setfill(separator) << "p(win exact)";
-		cout << left << setw(colWidth) << setfill(separator) << "Sum p(win exact)";
-		cout << left << setw(colWidth) << setfill(separator) << "p(lose on final)";
-		cout << left << setw(colWidth) << setfill(separator) << "Win EV";
-		cout << left << setw(colWidth) << setfill(separator) << "Loss EV";
-		cout << endl;
-
+		printColumnHeaders();
 
 		//Win EV Sum, Net EV
 	}
@@ -123,7 +112,34 @@ private:
 				prev = stakes_in[i];
 			}
 		}
+		//All bets must also produce profit or break even
+		double cumulative_stake = 0.0;
+		for (int j = 1; j < (int)stakes_in.size(); ++j) {
+			cumulative_stake += stakes_in[j];
+			double profit = (((payout_factor + 1) * stakes_in[j]) - cumulative_stake);
+			if (profit < 0) {
+				return false;
+			}
+		}
 		return true;
+	}
+
+	void printColumnHeaders() {
+		const char separator = ' ';
+		cout << left << setw(6) << setfill(separator) << "Roll";
+		cout << left << setw(7) << setfill(separator) << "Stake";
+		cout << left << setw(12) << setfill(separator) << "Cum. Stake";
+		cout << left << setw(8) << setfill(separator) << "Profit";
+		cout << left << setw(14) << setfill(separator) << "p(win exact)";
+		cout << left << setw(18) << setfill(separator) << "Sum p(win exact)";
+		cout << left << setw(20) << setfill(separator) << "p(lose on final)";
+		cout << left << setw(8) << setfill(separator) << "Win EV";
+		cout << left << setw(9) << setfill(separator) << "Loss EV";
+		cout << endl;
+		for (int i = 0; i < 102; ++i) {
+			cout << "=";
+		}
+		cout << endl;
 	}
 };
 

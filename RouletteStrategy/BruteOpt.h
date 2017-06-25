@@ -35,15 +35,31 @@ public:
 		best_win_EV_sum = 0;
 		bool limit_reached = false;
 		total_rolls = 1;
+		int lower_bound;
+		int upper_bound = 2;
+		bool bounded = false;
+
 		while (limit_reached == false) { 
 			dynamic_solution.resize(total_rolls, 0.0);
+			solutionUpdated = false;
 			solutionFindRec(0);
-			++total_rolls;
-			//Limit is reached when the size of the dynamic solution didn't increase as it is anticipated it will due to what is considered optimal
-			//So when total_rolls becomes 2, it is anticipated that dynamic solution size is 1
-			if (best_stakes.size() != (total_rolls - 1)) {
-				limit_reached = true;
+
+			if (solutionUpdated == true) {
+				// 1 - 2 - 4 - 8 - 16 - 12 - 14 - 13
+				//Need to go halfway to the upper bound
+				if (!bounded) {
+					total_rolls += total_rolls;
+				}
+				else {
+					//Cut the range
+				}
 			}
+			else {
+				//Causes bounding
+			}
+
+			//When cutting the range and growing doesn't change "total_rolls" limit_reached = true
+
 		}
 	}
 
@@ -54,6 +70,7 @@ public:
 				(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
 				best_stakes = dynamic_solution;
 				best_win_EV_sum = dynamic_win_EV_sum;
+				solutionUpdated = true;
 			}
 			return;
 		}
@@ -139,6 +156,7 @@ private:
 	int payout_factor;
 	int board_hits;
 	int total_rolls;
+	bool solutionUpdated;
 	
 	double getWinEV(vector<double> &stakes_in) {
 		double winEVsum = 0;

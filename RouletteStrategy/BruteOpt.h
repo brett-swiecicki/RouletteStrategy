@@ -67,12 +67,56 @@ public:
 	}
 
 	void printOutputTable() {
-		cout << std::setprecision(3);
+		cout << std::setprecision(2);
 		cout << std::fixed; //Disable scientific notation for large numbers
 		const char separator = ' ';
 		printColumnHeaders();
 
-		//Win EV Sum, Net EV
+		double cumulative_stake = 0.0;
+		double p_win_single_roll = ((double)board_hits / 37.0);
+		double p_loss_prev = 1.0 - p_win_single_roll;
+		double p_win_exact_sum = 0;
+		double p_lose_on_final = 0;
+		double loss_EV = 0;
+
+		for (int i = 0; i < (int)best_stakes.size(); ++i) {
+			//** Computations */
+			cumulative_stake += best_stakes[i];
+			double profit = (((payout_factor + 1) * best_stakes[i]) - cumulative_stake);
+			double p_win_exact = p_win_single_roll * p_loss_prev;
+			p_win_exact_sum += p_win_exact;
+			double win_EV = (profit * p_win_exact);
+			p_loss_prev = p_loss_prev * p_loss_prev;
+			//** Output */
+			cout << left << setw(6) << setfill(separator) << (i + 1); //Roll number
+			cout << left << setw(10) << setfill(separator) << (best_stakes[i]); //Stake
+			cout << left << setw(12) << setfill(separator) << cumulative_stake;
+			cout << left << setw(10) << setfill(separator) << profit;
+			cout << left << setw(14) << setfill(separator) << p_win_exact;
+			cout << left << setw(18) << setfill(separator) << p_win_exact_sum;
+			if (i != ((int)best_stakes.size() - 1)) {
+				cout << left << setw(19) << setfill(separator) << "----";
+			}
+			else {
+				p_lose_on_final = 1.0 - p_win_exact_sum;
+				cout << left << setw(19) << setfill(separator) << p_lose_on_final;
+			}
+			cout << left << setw(8) << setfill(separator) << win_EV;
+
+			if (i != ((int)best_stakes.size() - 1)) {
+				cout << left << setw(19) << setfill(separator) << "----";
+			}
+			else {
+				loss_EV = p_lose_on_final * cumulative_stake;
+				cout << left << setw(9) << setfill(separator) << loss_EV;
+			}
+			
+			cout << endl;
+		}
+
+		cout << endl;
+		cout << "Win EV Sum " << best_win_EV_sum << endl;
+		cout << "Net EV " << (best_win_EV_sum - loss_EV) << endl;
 	}
 
 private:
@@ -127,12 +171,12 @@ private:
 	void printColumnHeaders() {
 		const char separator = ' ';
 		cout << left << setw(6) << setfill(separator) << "Roll";
-		cout << left << setw(7) << setfill(separator) << "Stake";
+		cout << left << setw(10) << setfill(separator) << "Stake";
 		cout << left << setw(12) << setfill(separator) << "Cum. Stake";
-		cout << left << setw(8) << setfill(separator) << "Profit";
+		cout << left << setw(10) << setfill(separator) << "Profit";
 		cout << left << setw(14) << setfill(separator) << "p(win exact)";
 		cout << left << setw(18) << setfill(separator) << "Sum p(win exact)";
-		cout << left << setw(20) << setfill(separator) << "p(lose on final)";
+		cout << left << setw(19) << setfill(separator) << "p(lose on final)";
 		cout << left << setw(8) << setfill(separator) << "Win EV";
 		cout << left << setw(9) << setfill(separator) << "Loss EV";
 		cout << endl;

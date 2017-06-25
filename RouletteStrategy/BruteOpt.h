@@ -48,14 +48,19 @@ public:
 				// 1 - 2 - 4 - 8 - 16 - 12 - 14 - 13
 				//Need to go halfway to the upper bound
 				if (!bounded) {
+					lower_bound = total_rolls;
 					total_rolls += total_rolls;
+					upper_bound = total_rolls;
 				}
 				else {
 					//Cut the range
 				}
 			}
 			else {
-				//Causes bounding
+				bounded = true;
+				int difference = upper_bound - lower_bound;
+				upper_bound = total_rolls;
+				total_rolls = lower_bound + (difference / 2);
 			}
 
 			//When cutting the range and growing doesn't change "total_rolls" limit_reached = true

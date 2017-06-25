@@ -4,6 +4,7 @@
 // minimizing risk.
 
 #include <iostream>
+#include <string>
 #include <vector>
 #include "BruteOpt.h"
 using namespace std;
@@ -14,4 +15,5 @@ int main() {
 	myProcessor.getInput();
 	myProcessor.findSolution();
 	myProcessor.printOutputTable();
+	system("Pause");
 }

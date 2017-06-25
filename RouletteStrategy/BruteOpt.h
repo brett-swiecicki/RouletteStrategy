@@ -36,12 +36,12 @@ public:
 		bool limit_reached = false;
 		total_rolls = 1;
 		while (limit_reached == false) { 
-			dynamic_solution.resize(total_rolls);
+			dynamic_solution.resize(total_rolls, 0.0);
 			solutionFindRec(0);
 			++total_rolls;
 			//Limit is reached when the size of the dynamic solution didn't increase as it is anticipated it will due to what is considered optimal
 			//So when total_rolls becomes 2, it is anticipated that dynamic solution size is 1
-			if ((dynamic_solution.size() != (total_rolls - 1)) || (total_rolls == 11)) {
+			if (best_stakes.size() != (total_rolls - 1)) {
 				limit_reached = true;
 			}
 		}
@@ -59,7 +59,7 @@ public:
 		}
 		for (int i = 0; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
-			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution);
+			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution, stake_number);
 			if (constraints_satisfied) {
 				solutionFindRec(stake_number + 1);
 			}
@@ -67,26 +67,35 @@ public:
 	}
 
 	void printOutputTable() {
-		cout << std::setprecision(2);
+		cout << std::setprecision(3);
 		cout << std::fixed; //Disable scientific notation for large numbers
 		const char separator = ' ';
 		printColumnHeaders();
 
 		double cumulative_stake = 0.0;
 		double p_win_single_roll = ((double)board_hits / 37.0);
-		double p_loss_prev = 1.0 - p_win_single_roll;
+		double p_loss_prev;
 		double p_win_exact_sum = 0;
 		double p_lose_on_final = 0;
 		double loss_EV = 0;
+		double p_win_exact;
 
 		for (int i = 0; i < (int)best_stakes.size(); ++i) {
 			//** Computations */
 			cumulative_stake += best_stakes[i];
 			double profit = (((payout_factor + 1) * best_stakes[i]) - cumulative_stake);
-			double p_win_exact = p_win_single_roll * p_loss_prev;
+
+			if (i != 0) {
+				p_win_exact = p_win_single_roll * p_loss_prev;
+				p_loss_prev = p_loss_prev * p_loss_prev;
+			}
+			else {
+				p_win_exact = p_win_single_roll;
+				p_loss_prev = 1.0 - p_win_single_roll;
+			}
 			p_win_exact_sum += p_win_exact;
 			double win_EV = (profit * p_win_exact);
-			p_loss_prev = p_loss_prev * p_loss_prev;
+
 			//** Output */
 			cout << left << setw(6) << setfill(separator) << (i + 1); //Roll number
 			cout << left << setw(10) << setfill(separator) << (best_stakes[i]); //Stake
@@ -101,14 +110,14 @@ public:
 				p_lose_on_final = 1.0 - p_win_exact_sum;
 				cout << left << setw(19) << setfill(separator) << p_lose_on_final;
 			}
-			cout << left << setw(8) << setfill(separator) << win_EV;
+			cout << left << setw(10) << setfill(separator) << win_EV;
 
 			if (i != ((int)best_stakes.size() - 1)) {
-				cout << left << setw(19) << setfill(separator) << "----";
+				cout << left << setw(11) << setfill(separator) << "----";
 			}
 			else {
 				loss_EV = p_lose_on_final * cumulative_stake;
-				cout << left << setw(9) << setfill(separator) << loss_EV;
+				cout << left << setw(11) << setfill(separator) << loss_EV;
 			}
 			
 			cout << endl;
@@ -135,21 +144,31 @@ private:
 		double winEVsum = 0;
 		double p_win_single_roll = ((double)board_hits / 37.0);
 		double cumulative_stake = 0.0;
-		double p_loss_prev = 1.0 - p_win_single_roll;
+		double p_loss_prev;
+		double p_win_exact_roll;
+
 		for (int i = 0; i < (int)stakes_in.size(); ++i) {
 			cumulative_stake += stakes_in[i];
 			double profit = (((payout_factor + 1) * stakes_in[i]) - cumulative_stake);
-			double p_win_exact_roll = p_win_single_roll * p_loss_prev;
+
+			if (i != 0) {
+				p_win_exact_roll = p_win_single_roll * p_loss_prev;
+				p_loss_prev = p_loss_prev * p_loss_prev;
+			}
+			else {
+				p_win_exact_roll = p_win_single_roll;
+				p_loss_prev = 1.0 - p_win_single_roll;
+			}
+
 			winEVsum += (p_win_exact_roll * profit);
-			p_loss_prev = p_loss_prev * p_loss_prev;
 		}
 		return winEVsum;
 	}
 
-	bool checkConstraintSatisfaction(vector<double> &stakes_in) {
+	bool checkConstraintSatisfaction(vector<double> &stakes_in, int stake_number) {
 		double prev = stakes_in[0];
 		if (stakes_in.size() > 1) {
-			for (int i = 1; i < (int)stakes_in.size(); ++i) {
+			for (int i = 1; i <= stake_number; ++i) {
 				if (prev > stakes_in[i]) {
 					return false;
 				}
@@ -158,7 +177,7 @@ private:
 		}
 		//All bets must also produce profit or break even
 		double cumulative_stake = 0.0;
-		for (int j = 1; j < (int)stakes_in.size(); ++j) {
+		for (int j = 0; j <= stake_number; ++j) {
 			cumulative_stake += stakes_in[j];
 			double profit = (((payout_factor + 1) * stakes_in[j]) - cumulative_stake);
 			if (profit < 0) {
@@ -180,7 +199,7 @@ private:
 		cout << left << setw(8) << setfill(separator) << "Win EV";
 		cout << left << setw(9) << setfill(separator) << "Loss EV";
 		cout << endl;
-		for (int i = 0; i < 102; ++i) {
+		for (int i = 0; i < 106; ++i) {
 			cout << "=";
 		}
 		cout << endl;

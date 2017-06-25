@@ -42,33 +42,34 @@ public:
 		while (limit_reached == false) { 
 			dynamic_solution.resize(total_rolls, 0.0);
 			solutionUpdated = false;
-			solutionFindRec(0);
+			solutionFindRec(0, 0.0);
 
 			if (solutionUpdated == true) {
-				// 1 - 2 - 4 - 8 - 16 - 12 - 14 - 13
-				//Need to go halfway to the upper bound
 				if (!bounded) {
 					lower_bound = total_rolls;
 					total_rolls += total_rolls;
 					upper_bound = total_rolls;
 				}
 				else {
-					//Cut the range
+					int difference = upper_bound - lower_bound;
+					lower_bound = total_rolls;
+					total_rolls = upper_bound + (difference / 2);
+					upper_bound = total_rolls;
 				}
 			}
 			else {
 				bounded = true;
 				int difference = upper_bound - lower_bound;
-				upper_bound = total_rolls;
 				total_rolls = lower_bound + (difference / 2);
+				upper_bound = total_rolls;
 			}
-
-			//When cutting the range and growing doesn't change "total_rolls" limit_reached = true
-
+			if (upper_bound == lower_bound) {
+				limit_reached = true;
+			}
 		}
 	}
 
-	void solutionFindRec(int stake_number) {
+	void solutionFindRec(int stake_number, double cumulative_stake) {
 		if (stake_number == total_rolls) {
 			double dynamic_win_EV_sum = getWinEV(dynamic_solution);
 			if ((dynamic_solution.size() > best_stakes.size()) || 
@@ -81,9 +82,9 @@ public:
 		}
 		for (int i = 0; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
-			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution, stake_number);
+			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
 			if (constraints_satisfied) {
-				solutionFindRec(stake_number + 1);
+				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]);
 			}
 		}
 	}
@@ -188,24 +189,17 @@ private:
 		return winEVsum;
 	}
 
-	bool checkConstraintSatisfaction(vector<double> &stakes_in, int stake_number) {
-		double prev = stakes_in[0];
-		if (stakes_in.size() > 1) {
-			for (int i = 1; i <= stake_number; ++i) {
-				if (prev > stakes_in[i]) {
-					return false;
-				}
-				prev = stakes_in[i];
-			}
-		}
-		//All bets must also produce profit or break even
-		double cumulative_stake = 0.0;
-		for (int j = 0; j <= stake_number; ++j) {
-			cumulative_stake += stakes_in[j];
-			double profit = (((payout_factor + 1) * stakes_in[j]) - cumulative_stake);
-			if (profit < 0) {
+	bool checkConstraintSatisfaction(vector<double> &stakes_in, int stake_number, double cumulative_stake) {
+		//The newly added entry has to be greater than or equal to the previous
+		if (stake_number > 0) {
+			if (stakes_in[stake_number - 1] > stakes_in[stake_number]) {
 				return false;
 			}
+		}
+		//Make sure the bet at stakes_in[stakes_number] produces a profit or break even
+		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
+		if (profit < 0) {
+			return false;
 		}
 		return true;
 	}

@@ -43,6 +43,7 @@ public:
 			dynamic_solution.resize(total_rolls, 0.0);
 			solutionUpdated = false;
 			solutionFindRec(0, 0.0);
+			cout << "Computing completed for " << total_rolls << " rolls." << endl;
 
 			if (solutionUpdated == true) {
 				if (!bounded) {
@@ -84,7 +85,7 @@ public:
 			dynamic_solution[stake_number] = possible_bets[i];
 			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
 			if (constraints_satisfied) {
-				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]);
+				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]); //BOTTLENECK!
 			}
 		}
 	}

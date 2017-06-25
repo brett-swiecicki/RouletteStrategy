@@ -1,20 +1,3 @@
-Enter the table minimum bet: 1
-
-Enter the table maximum bet: 3
-
-Enter the table minimum bet increment: 1
-
-Enter the payout factor [__ to 1]: 2
-
-Enter the number of winning table positions (out of 37): 12
-
-Roll  Stake     Cum. Stake  Profit    p(win exact)  Sum p(win exact)  p(lose on final)   Win EV  Loss EV
-==========================================================================================================
-1     1.000     1.000       2.000     0.324         0.324             ----               0.649     ----
-2     1.000     2.000       1.000     0.219         0.543             ----               0.219     ----
-3     2.000     4.000       2.000     0.148         0.692             ----               0.296     ----
-4     2.000     6.000       0.000     0.068         0.759             ----               0.000     ----
-5     3.000     9.000       0.000     0.014         0.773             0.227              0.000     2.041
-
-Win EV Sum 1.164
-Net EV -0.877
+Ideas for increasing speed:
+Hash table
+Top down dynamic programming

@@ -6,10 +6,21 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
+#include <Windows.h>
+#include <wchar.h>
 using namespace std;
 
 class OptimalSolutionProcessor {
 public:
+
+	void displaytime() {
+		//display current time - possibly convert to clock time and not military
+		SYSTEMTIME time;
+		GetLocalTime(&time);
+		cout << endl;
+		wprintf(L"The Local Time: %02d:%02d:%02d\n", time.wHour, time.wMinute, time.wSecond);
+		cout << endl;
+	}
 
 	void getInput() {
 		cout << "Enter the table minimum bet: ";
@@ -34,37 +45,15 @@ public:
 		}
 		best_win_EV_sum = 0;
 		bool limit_reached = false;
-		total_rolls = 1;
-		int lower_bound;
-		int upper_bound = 2;
-		bool bounded = false;
+		total_rolls = getLowestBoundRolls(); //Linear incrementation
 
 		while (limit_reached == false) { 
 			dynamic_solution.resize(total_rolls, 0.0);
 			solutionUpdated = false;
 			solutionFindRec(0, 0.0);
 			cout << "Computing completed for " << total_rolls << " rolls." << endl;
-
-			if (solutionUpdated == true) {
-				if (!bounded) {
-					lower_bound = total_rolls;
-					total_rolls += total_rolls;
-					upper_bound = total_rolls;
-				}
-				else {
-					int difference = upper_bound - lower_bound;
-					lower_bound = total_rolls;
-					total_rolls = upper_bound + (difference / 2);
-					upper_bound = total_rolls;
-				}
-			}
-			else {
-				bounded = true;
-				int difference = upper_bound - lower_bound;
-				total_rolls = lower_bound + (difference / 2);
-				upper_bound = total_rolls;
-			}
-			if (upper_bound == lower_bound) {
+			++total_rolls;
+			if (solutionUpdated == false) {
 				limit_reached = true;
 			}
 		}
@@ -91,13 +80,15 @@ public:
 	}
 
 	void printOutputTable() {
-		cout << std::setprecision(3);
+		cout << std::setprecision(2);
 		cout << std::fixed; //Disable scientific notation for large numbers
+		cout << endl;
 		const char separator = ' ';
 		printColumnHeaders();
 
 		double cumulative_stake = 0.0;
 		double p_win_single_roll = ((double)board_hits / 37.0);
+		double p_loss_single_roll = 1.0 - p_win_single_roll;
 		double p_loss_prev;
 		double p_win_exact_sum = 0;
 		double p_lose_on_final = 0;
@@ -111,35 +102,39 @@ public:
 
 			if (i != 0) {
 				p_win_exact = p_win_single_roll * p_loss_prev;
-				p_loss_prev = p_loss_prev * p_loss_prev;
+				p_loss_prev = p_loss_prev * p_loss_single_roll;
 			}
 			else {
 				p_win_exact = p_win_single_roll;
-				p_loss_prev = 1.0 - p_win_single_roll;
+				p_loss_prev = p_loss_single_roll;
 			}
 			p_win_exact_sum += p_win_exact;
 			double win_EV = (profit * p_win_exact);
 
 			//** Output */
+			cout << std::setprecision(2);
 			cout << left << setw(6) << setfill(separator) << (i + 1); //Roll number
 			cout << left << setw(10) << setfill(separator) << (best_stakes[i]); //Stake
 			cout << left << setw(12) << setfill(separator) << cumulative_stake;
 			cout << left << setw(10) << setfill(separator) << profit;
+			cout << std::setprecision(5);
 			cout << left << setw(14) << setfill(separator) << p_win_exact;
 			cout << left << setw(18) << setfill(separator) << p_win_exact_sum;
 			if (i != ((int)best_stakes.size() - 1)) {
-				cout << left << setw(19) << setfill(separator) << "----";
+				cout << left << setw(19) << setfill(separator) << "-------";
 			}
 			else {
+				cout << std::setprecision(5);
 				p_lose_on_final = 1.0 - p_win_exact_sum;
 				cout << left << setw(19) << setfill(separator) << p_lose_on_final;
 			}
 			cout << left << setw(10) << setfill(separator) << win_EV;
 
 			if (i != ((int)best_stakes.size() - 1)) {
-				cout << left << setw(11) << setfill(separator) << "----";
+				cout << left << setw(11) << setfill(separator) << "-------";
 			}
 			else {
+				cout << std::setprecision(5);
 				loss_EV = p_lose_on_final * cumulative_stake;
 				cout << left << setw(11) << setfill(separator) << loss_EV;
 			}
@@ -165,9 +160,11 @@ private:
 	int total_rolls;
 	bool solutionUpdated;
 	
-	double getWinEV(vector<double> &stakes_in) {
+	double getWinEV(const vector<double> &stakes_in) {
 		double winEVsum = 0;
 		double p_win_single_roll = ((double)board_hits / 37.0);
+		double p_loss_single_roll = 1.0 - p_win_single_roll;
+
 		double cumulative_stake = 0.0;
 		double p_loss_prev;
 		double p_win_exact_roll;
@@ -178,11 +175,11 @@ private:
 
 			if (i != 0) {
 				p_win_exact_roll = p_win_single_roll * p_loss_prev;
-				p_loss_prev = p_loss_prev * p_loss_prev;
+				p_loss_prev = p_loss_prev * p_loss_single_roll;
 			}
 			else {
 				p_win_exact_roll = p_win_single_roll;
-				p_loss_prev = 1.0 - p_win_single_roll;
+				p_loss_prev = p_loss_single_roll;
 			}
 
 			winEVsum += (p_win_exact_roll * profit);
@@ -190,7 +187,7 @@ private:
 		return winEVsum;
 	}
 
-	bool checkConstraintSatisfaction(vector<double> &stakes_in, int stake_number, double cumulative_stake) {
+	bool checkConstraintSatisfaction(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
 		//The newly added entry has to be greater than or equal to the previous
 		if (stake_number > 0) {
 			if (stakes_in[stake_number - 1] > stakes_in[stake_number]) {
@@ -217,11 +214,22 @@ private:
 		cout << left << setw(8) << setfill(separator) << "Win EV";
 		cout << left << setw(9) << setfill(separator) << "Loss EV";
 		cout << endl;
-		for (int i = 0; i < 106; ++i) {
+		for (int i = 0; i < 107; ++i) {
 			cout << "=";
 		}
 		cout << endl;
 	}
-};
 
+	int getLowestBoundRolls() {
+		int num_rolls = 0;
+		double betFactor = 1 + (1.0 / payout_factor);
+		double bet = min_bet;
+		while (bet <= max_bet) {
+			++num_rolls;
+			bet *= betFactor;
+		}
+		return num_rolls;
+	}
+};
+ 
 #endif

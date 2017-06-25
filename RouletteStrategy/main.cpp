@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <Windows.h>
+#include <wchar.h>
 #include "BruteOpt.h"
 using namespace std;
 
@@ -13,7 +15,9 @@ int main() {
 	cout << "[INSERT INTRODUCTION HERE]" << endl;
 	OptimalSolutionProcessor myProcessor;
 	myProcessor.getInput();
+	myProcessor.displaytime();
 	myProcessor.findSolution();
 	myProcessor.printOutputTable();
+	myProcessor.displaytime();
 	system("Pause");
 }

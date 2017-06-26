@@ -70,6 +70,7 @@ public:
 			}
 			return;
 		}
+
 		for (int i = 0; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
 			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
@@ -77,6 +78,7 @@ public:
 				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]); //BOTTLENECK!
 			}
 		}
+
 	}
 
 	void printOutputTable() {

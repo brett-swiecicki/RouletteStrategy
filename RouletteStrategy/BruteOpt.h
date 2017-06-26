@@ -33,6 +33,19 @@ public:
 		cin >> payout_factor;
 		cout << endl << "Enter the number of winning table positions (out of 37): ";
 		cin >> board_hits;
+		cout << "Are break even bets acceptable? Y or N: ";
+		char breakEven;
+		cin >> breakEven;
+		if ((breakEven == 'Y') || (breakEven == 'y') || (breakEven == '1')) {
+			allowBreakEven = true;
+		}
+		else if ((breakEven == 'N') || (breakEven == 'n') || (breakEven == '0')) {
+			allowBreakEven = false;
+		}
+		else {
+			cerr << "Incorrect selection was made: " << breakEven << endl;
+			exit(1);
+		}
 		cout << endl;
 		//Possilbly enable some constraint satisfaction requirements here.
 	} //End of getInput
@@ -50,8 +63,8 @@ public:
 		while (limit_reached == false) { 
 			dynamic_solution.resize(total_rolls, 0.0);
 			solutionUpdated = false;
+			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
 			solutionFindRec(0, 0.0);
-			cout << "Computing completed for " << total_rolls << " rolls." << endl;
 			++total_rolls;
 			if (solutionUpdated == false) {
 				limit_reached = true;
@@ -71,14 +84,15 @@ public:
 			return;
 		}
 
-		for (int i = 0; i < (int)possible_bets.size(); ++i) {
+		for (int i = ((int)possible_bets.size() - 1); i >= 0; --i) {
 			dynamic_solution[stake_number] = possible_bets[i];
-			bool constraints_satisfied = checkConstraintSatisfaction(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (constraints_satisfied) {
-				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]); //BOTTLENECK!
+			bool increasing = checkIfIncreasing(dynamic_solution, stake_number);
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+			if ((!increasing) || (!profitable)) {
+				break;
 			}
+			solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]);
 		}
-
 	}
 
 	void printOutputTable() {
@@ -161,6 +175,31 @@ private:
 	int board_hits;
 	int total_rolls;
 	bool solutionUpdated;
+	bool allowBreakEven;
+
+	bool checkIfIncreasing(const vector<double> &stakes_in, int stake_number) {
+		if (stake_number > 0) {
+			if (stakes_in[stake_number - 1] > stakes_in[stake_number]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool checkIfProfitable(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
+		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
+		if (allowBreakEven) {
+			if (profit < 0) {
+				return false;
+			}
+		}
+		else {
+			if (profit <= 0) {
+				return false;
+			}
+		}
+		return true;
+	}
 	
 	double getWinEV(const vector<double> &stakes_in) {
 		double winEVsum = 0;
@@ -187,21 +226,6 @@ private:
 			winEVsum += (p_win_exact_roll * profit);
 		}
 		return winEVsum;
-	}
-
-	bool checkConstraintSatisfaction(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
-		//The newly added entry has to be greater than or equal to the previous
-		if (stake_number > 0) {
-			if (stakes_in[stake_number - 1] > stakes_in[stake_number]) {
-				return false;
-			}
-		}
-		//Make sure the bet at stakes_in[stakes_number] produces a profit or break even
-		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
-		if (profit < 0) {
-			return false;
-		}
-		return true;
 	}
 
 	void printColumnHeaders() {

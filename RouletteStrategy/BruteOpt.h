@@ -30,7 +30,7 @@ public:
 		cin >> min_increment;
 		cout << "Enter the payout factor [__ to 1]: ";
 		cin >> payout_factor;
-		cout << "Enter the number of winning table positions (out of 37 or 38): ";
+		cout << "Enter the number of winning table positions: ";
 		cin >> board_hits;
 		cout << "Are break even bets acceptable? Y or N: ";
 		char breakEven;
@@ -110,10 +110,9 @@ public:
 		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
 			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (!profitable) {
-				break;
+			if (profitable) {
+				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
-			solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
 		}
 	}
 

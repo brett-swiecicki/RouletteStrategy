@@ -17,7 +17,6 @@ public:
 		//display current time - possibly convert to clock time and not military
 		SYSTEMTIME time;
 		GetLocalTime(&time);
-		cout << endl;
 		wprintf(L"The Local Time: %02d:%02d:%02d\n", time.wHour, time.wMinute, time.wSecond);
 		cout << endl;
 	}
@@ -25,13 +24,13 @@ public:
 	void getInput() {
 		cout << "Enter the table minimum bet: ";
 		cin >> min_bet;
-		cout << endl << "Enter the table maximum bet: ";
+		cout << "Enter the table maximum bet: ";
 		cin >> max_bet;
-		cout << endl << "Enter the table minimum bet increment: ";
+		cout << "Enter the table minimum bet increment: ";
 		cin >> min_increment;
-		cout << endl << "Enter the payout factor [__ to 1]: ";
+		cout << "Enter the payout factor [__ to 1]: ";
 		cin >> payout_factor;
-		cout << endl << "Enter the number of winning table positions (out of 37): ";
+		cout << "Enter the number of winning table positions (out of 37 or 38): ";
 		cin >> board_hits;
 		cout << "Are break even bets acceptable? Y or N: ";
 		char breakEven;
@@ -46,8 +45,20 @@ public:
 			cerr << "Incorrect selection was made: " << breakEven << endl;
 			exit(1);
 		}
+		cout << "American or European? A or E: ";
+		char AmOrEur;
+		cin >> AmOrEur;
+		if ((AmOrEur == 'A') || (AmOrEur == 'a')) {
+			board_size = 38;
+		}
+		else if ((AmOrEur == 'E') || (AmOrEur == 'e')) {
+			board_size = 37;
+		}
+		else {
+			cerr << "Incorrect selection was made: " << AmOrEur << endl;
+			exit(1);
+		}
 		cout << endl;
-		//Possilbly enable some constraint satisfaction requirements here.
 	} //End of getInput
 
 	void findSolution() {
@@ -60,38 +71,49 @@ public:
 		bool limit_reached = false;
 		total_rolls = getLowestBoundRolls(); //Linear incrementation
 
-		while (limit_reached == false) { 
-			dynamic_solution.resize(total_rolls, 0.0);
-			solutionUpdated = false;
-			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			solutionFindRec(0, 0.0);
-			++total_rolls;
-			if (solutionUpdated == false) {
-				limit_reached = true;
+		if (total_rolls == 1) {
+			dynamic_solution.resize(total_rolls);
+			dynamic_solution[0] = max_bet;
+		}
+		else {
+			while (limit_reached == false) {
+				dynamic_solution.resize(total_rolls, 0.0);
+				solutionUpdated = false;
+				cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
+				dynamic_solution[0] = min_bet;
+				solutionFindRec(1, min_bet, 0);
+				++total_rolls;
+				if (solutionUpdated == false) {
+					limit_reached = true;
+				}
 			}
 		}
 	}
 
-	void solutionFindRec(int stake_number, double cumulative_stake) {
-		if (stake_number == total_rolls) {
-			double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-			if ((dynamic_solution.size() > best_stakes.size()) || 
-				(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-				best_stakes = dynamic_solution;
-				best_win_EV_sum = dynamic_win_EV_sum;
-				solutionUpdated = true;
+	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
+		if (stake_number == (total_rolls - 1)) {
+			dynamic_solution[stake_number] = max_bet;
+			cumulative_stake += max_bet;
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
+			if (profitable) {
+				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
+				if ((dynamic_solution.size() > best_stakes.size()) ||
+					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
+					best_stakes = dynamic_solution;
+					best_win_EV_sum = dynamic_win_EV_sum;
+					solutionUpdated = true;
+				}
 			}
 			return;
 		}
 
-		for (int i = ((int)possible_bets.size() - 1); i >= 0; --i) {
+		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
-			bool increasing = checkIfIncreasing(dynamic_solution, stake_number);
 			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if ((!increasing) || (!profitable)) {
+			if (!profitable) {
 				break;
 			}
-			solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i]);
+			solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
 		}
 	}
 
@@ -103,7 +125,7 @@ public:
 		printColumnHeaders();
 
 		double cumulative_stake = 0.0;
-		double p_win_single_roll = ((double)board_hits / 37.0);
+		double p_win_single_roll = ((double)board_hits / (double)board_size);
 		double p_loss_single_roll = 1.0 - p_win_single_roll;
 		double p_loss_prev;
 		double p_win_exact_sum = 0;
@@ -161,6 +183,7 @@ public:
 		cout << endl;
 		cout << "Win EV Sum " << best_win_EV_sum << endl;
 		cout << "Net EV " << (best_win_EV_sum - loss_EV) << endl;
+		cout << endl;
 	}
 
 private:
@@ -173,18 +196,10 @@ private:
 	double min_increment;
 	int payout_factor;
 	int board_hits;
+	int board_size;
 	int total_rolls;
 	bool solutionUpdated;
 	bool allowBreakEven;
-
-	bool checkIfIncreasing(const vector<double> &stakes_in, int stake_number) {
-		if (stake_number > 0) {
-			if (stakes_in[stake_number - 1] > stakes_in[stake_number]) {
-				return false;
-			}
-		}
-		return true;
-	}
 
 	bool checkIfProfitable(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
 		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
@@ -203,7 +218,7 @@ private:
 	
 	double getWinEV(const vector<double> &stakes_in) {
 		double winEVsum = 0;
-		double p_win_single_roll = ((double)board_hits / 37.0);
+		double p_win_single_roll = ((double)board_hits / (double)board_size);
 		double p_loss_single_roll = 1.0 - p_win_single_roll;
 
 		double cumulative_stake = 0.0;

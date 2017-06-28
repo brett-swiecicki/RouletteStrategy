@@ -130,24 +130,6 @@ public:
 			return;
 		}
 		
-		//Try to run out with max_bet
-		double trial_stake = cumulative_stake + max_bet;
-		double trial_profit = (((payout_factor + 1) * max_bet) - trial_stake);
-		if (trial_profit >= ((total_rolls - stake_number - 1) * max_bet)) {
-			while (stake_number < total_rolls) {
-				dynamic_solution[stake_number] = max_bet;
-				cumulative_stake += max_bet;
-				++stake_number;
-			}
-			double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-			if ((dynamic_solution.size() > best_stakes.size()) ||
-				(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-				best_stakes = dynamic_solution;
-				best_win_EV_sum = dynamic_win_EV_sum;
-				solutionUpdated = true;
-			}
-			return;
-		}
 
 		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];

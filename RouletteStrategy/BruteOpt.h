@@ -72,20 +72,43 @@ public:
 		total_rolls = getLowestBoundRolls(); //Linear incrementation
 
 		if (total_rolls == 1) {
-			dynamic_solution.resize(total_rolls);
-			dynamic_solution[0] = max_bet;
+			best_stakes.resize(total_rolls);
+			best_stakes[0] = max_bet;
+			return;
 		}
-		else {
-			while (limit_reached == false) {
-				dynamic_solution.resize(total_rolls, 0.0);
-				solutionUpdated = false;
-				cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-				dynamic_solution[0] = min_bet;
-				solutionFindRec(1, min_bet, 0);
-				++total_rolls;
-				if (solutionUpdated == false) {
-					limit_reached = true;
+		
+		while (limit_reached == false) {
+			int startingStake;
+			double startingCumulative = 0.0;
+			dynamic_solution.resize(total_rolls);
+			if (total_rolls >= ((payout_factor * 2) + 2)) {
+				//First payout_factor + 1 numbers can be set to min
+				if (allowBreakEven) {
+					startingStake = (payout_factor + 1);
+					for (int i = 0; i < (payout_factor + 1); ++i) {
+						dynamic_solution[i] = min_bet;
+						startingCumulative += min_bet;
+					}
 				}
+				else {
+					startingStake = payout_factor;
+					for (int i = 0; i < payout_factor; ++i) {
+						dynamic_solution[i] = min_bet;
+						startingCumulative += min_bet;
+					}
+				}
+			}
+			else {
+				startingStake = 1;
+				dynamic_solution[0] = min_bet;
+				startingCumulative += min_bet;
+			}
+			solutionUpdated = false;
+			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
+			solutionFindRec(startingStake, startingCumulative, 0);
+			++total_rolls;
+			if (solutionUpdated == false) {
+				limit_reached = true;
 			}
 		}
 	}
@@ -175,7 +198,7 @@ public:
 				loss_EV = p_lose_on_final * cumulative_stake;
 				cout << left << setw(11) << setfill(separator) << loss_EV;
 			}
-			
+
 			cout << endl;
 		}
 
@@ -214,7 +237,7 @@ private:
 		}
 		return true;
 	}
-	
+
 	double getWinEV(const vector<double> &stakes_in) {
 		double winEVsum = 0;
 		double p_win_single_roll = ((double)board_hits / (double)board_size);
@@ -271,5 +294,5 @@ private:
 		return num_rolls;
 	}
 };
- 
+
 #endif

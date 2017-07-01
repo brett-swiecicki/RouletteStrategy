@@ -115,6 +115,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BruteOpt.h" />
+    <ClInclude Include="ctpl_stl.h" />
+    <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Notes.txt" />

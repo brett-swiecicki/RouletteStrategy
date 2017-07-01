@@ -26,6 +26,12 @@
     <ClInclude Include="BruteOpt.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ctpl_stl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Soaring-in.txt">

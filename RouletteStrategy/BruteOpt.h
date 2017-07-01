@@ -26,6 +26,12 @@ public:
 	double get_best_win_EV_sum() {
 		return best_win_EV_sum;
 	}
+	size_t get_best_size() {
+		return best_stakes.size();
+	}
+	vector<double>& reference_best_stakes() {
+		return best_stakes;
+	}
 private:
 	vector<double> best_stakes;
 	double best_win_EV_sum = 0.0;
@@ -34,65 +40,20 @@ private:
 
 class stakeFinder {
 public:
-	stakeFinder(OptimalSolutionProcessor* parent_in, Solution& solution_in)
-		: parentProcessor(parent_in), bestSolution(solution_in) {}
+	stakeFinder(OptimalSolutionProcessor* parent_in, Solution& solution_in);
 
-	void setParametersForProcessing(vector<double>& dynamic_solution_in, int stake_number_in, int lastBetAdded_in, double cumulative_stake_in) {
-		dynamic_solution = dynamic_solution_in;
-		stake_number = stake_number_in;
-		lastBetAdded = lastBetAdded_in;
-		cumulative_stake = cumulative_stake_in;
-	}
+	void setParametersForProcessing(vector<double>& dynamic_solution_in);
 
-	void operator()() {
-		//This is what the threads will invoke. Thus this is where the recursion needs to begin occuring.
-	}
+	void operator()();
+
+private:
 	OptimalSolutionProcessor* parentProcessor;
 	Solution& bestSolution;
 	vector<double> dynamic_solution;
-	int stake_number;
-	int lastBetAdded;
-	double cumulative_stake;
-private:
-	void solutionFindRec() {
-		if (stake_number == (total_rolls - 1)) {
-			dynamic_solution[stake_number] = max_bet;
-			cumulative_stake += max_bet;
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
-			if (profitable) {
-				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-				if ((dynamic_solution.size() > best_stakes.size()) ||
-					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-					best_stakes = dynamic_solution;
-					best_win_EV_sum = dynamic_win_EV_sum;
-					solutionUpdated = true;
-				}
-			}
-			return;
-		}
 
-		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (profitable) {
-				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
-			}
-		}
-	}
-	bool checkIfProfitable() {
-		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
-		if (allowBreakEven) {
-			if (profit < 0) {
-				return false;
-			}
-		}
-		else {
-			if (profit <= 0) {
-				return false;
-			}
-		}
-		return true;
-	}
+	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded);
+
+	bool checkIfProfitable(vector<double>& stakes_in, int stake_number, double cumulative_stake);
 };
 
 class OptimalSolutionProcessor {
@@ -188,42 +149,17 @@ public:
 
 	void findSolutionWithThreadPool() {
 		thread_pool processing_pool(num_threads);
-		for (int i = 0; i < (int)possible_bets.size(); ++i) {
-			//Modify the stakeFinder objects for processing
-			//vector<double>& dynamic_solution_in, int stake_number_in, int lastBetAdded_in, double cumulative_stake_in
+		for (int i = 0; i < ((int)possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
+			tasks_vector[i].setParametersForProcessing(dynamic_solution_start);
 		}
-		
-
-		//Program can't continue until all tasks complete in pool
-	}
-
-	/*
-	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
-		if (stake_number == (total_rolls - 1)) {
-			dynamic_solution[stake_number] = max_bet;
-			cumulative_stake += max_bet;
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
-			if (profitable) {
-				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-				if ((dynamic_solution.size() > best_stakes.size()) ||
-					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-					best_stakes = dynamic_solution;
-					best_win_EV_sum = dynamic_win_EV_sum;
-					solutionUpdated = true;
-				}
-			}
-			return;
+		vector<std::future<void>> futures(possible_bets.size()); //Populate vector of futures by sending into the pool
+		for (int j = 0; j < ((int)possible_bets.size()); ++j) {
+			futures[j] = processing_pool.submit(tasks_vector[j]);
 		}
-
-		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (profitable) {
-				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
-			}
+		for (int p = 0; p < ((int)futures.size()); ++p) { //Program can't continue until all tasks complete in pool
+			futures[p].get();
 		}
 	}
-	*/
 
 	void printOutputTable() {
 		cout << std::setprecision(2);
@@ -241,7 +177,8 @@ public:
 		double loss_EV = 0;
 		double p_win_exact;
 
-		for (int i = 0; i < (int)best_stakes.size(); ++i) {
+		vector<double> best_stakes = optimalSolution.reference_best_stakes();
+		for (int i = 0; i < (int)optimalSolution.get_best_size(); ++i) {
 			//** Computations */
 			cumulative_stake += best_stakes[i];
 			double profit = (((payout_factor + 1) * best_stakes[i]) - cumulative_stake);
@@ -289,29 +226,21 @@ public:
 		}
 
 		cout << endl;
-		cout << "Win EV Sum " << best_win_EV_sum << endl;
-		cout << "Net EV " << (best_win_EV_sum - loss_EV) << endl;
+		cout << "Win EV Sum " << optimalSolution.get_best_win_EV_sum() << endl;
+		cout << "Net EV " << (optimalSolution.get_best_win_EV_sum() - loss_EV) << endl;
 		cout << endl;
 	}
 
+	//Data and functions that need to be public for solution recursion
 	vector<double> possible_bets;
-private:
-	Solution optimalSolution; //Still need to keep this separate because of the mutex
-	vector<double> dynamic_solution_start;
-	vector<stakeFinder> tasks_vector;
-	double min_bet;
 	double max_bet;
-	double min_increment;
+	double min_bet;
 	double cumulative_stake_starting;
 	int payout_factor;
-	int board_hits;
-	int board_size;
 	int total_rolls;
 	int starting_stake;
-	unsigned num_threads;
 	bool solutionUpdated;
 	bool allowBreakEven;
-
 
 	double getWinEV(const vector<double> &stakes_in) {
 		double winEVsum = 0;
@@ -339,6 +268,15 @@ private:
 		}
 		return winEVsum;
 	}
+private:
+	Solution optimalSolution; //Still need to keep this separate because of the mutex
+	vector<double> dynamic_solution_start;
+	vector<stakeFinder> tasks_vector;
+	double min_increment;
+	int board_hits;
+	int board_size;
+	
+	unsigned num_threads;
 
 	void printColumnHeaders() {
 		const char separator = ' ';
@@ -406,6 +344,66 @@ private:
 
 	void buildTasksVector() {
 		tasks_vector.resize(possible_bets.size(), stakeFinder(this, optimalSolution));
+	}
+};
+
+class stakeFinder {
+public:
+	stakeFinder(OptimalSolutionProcessor* parent_in, Solution& solution_in)
+		: parentProcessor(parent_in), bestSolution(solution_in) {}
+
+	void setParametersForProcessing(vector<double>& dynamic_solution_in) {
+		dynamic_solution = dynamic_solution_in;
+	}
+
+	void operator()() {
+		solutionFindRec(parentProcessor->starting_stake, parentProcessor->cumulative_stake_starting, 0);
+	}
+
+private:
+	OptimalSolutionProcessor* parentProcessor;
+	Solution& bestSolution;
+	vector<double> dynamic_solution;
+
+	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
+		if (stake_number == (parentProcessor->total_rolls - 1)) {
+			dynamic_solution[stake_number] = parentProcessor->max_bet;
+			cumulative_stake += parentProcessor->max_bet;
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
+			if (profitable) {
+				double dynamic_win_EV_sum = parentProcessor->getWinEV(dynamic_solution);
+				if ((dynamic_solution.size() > bestSolution.get_best_size()) ||
+					(((dynamic_solution.size() == bestSolution.get_best_size()) && (dynamic_win_EV_sum > bestSolution.get_best_win_EV_sum())))) {
+					bestSolution.change_best_stakes(dynamic_solution);
+					bestSolution.change_best_win_EV_sum(dynamic_win_EV_sum);
+					parentProcessor->solutionUpdated = true;
+				}
+			}
+			return;
+		}
+
+		for (int i = lastBetAdded; i < (int)bestSolution.get_best_size(); ++i) {
+			dynamic_solution[stake_number] = parentProcessor->possible_bets[i];
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + parentProcessor->possible_bets[i]);
+			if (profitable) {
+				solutionFindRec(stake_number + 1, cumulative_stake + parentProcessor->possible_bets[i], i);
+			}
+		}
+	}
+
+	bool checkIfProfitable(vector<double>& stakes_in, int stake_number, double cumulative_stake) {
+		double profit = (((parentProcessor->payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
+		if (parentProcessor->allowBreakEven) {
+			if (profit < 0) {
+				return false;
+			}
+		}
+		else {
+			if (profit <= 0) {
+				return false;
+			}
+		}
+		return true;
 	}
 };
 

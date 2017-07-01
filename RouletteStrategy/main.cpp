@@ -12,7 +12,7 @@
 using namespace std;
 
 int main() {
-	cout << "[INSERT INTRODUCTION HERE]" << endl;
+	cout << "Optimal Roulette Strategy Finder." << endl;
 	OptimalSolutionProcessor myProcessor;
 	myProcessor.getInput();
 	myProcessor.displaytime();

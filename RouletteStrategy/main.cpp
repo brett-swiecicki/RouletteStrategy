@@ -8,7 +8,7 @@
 #include <vector>
 #include <Windows.h>
 #include <wchar.h>
-#include "BruteOpt.h"
+#include "OptProcessor.h"
 using namespace std;
 
 int main() {

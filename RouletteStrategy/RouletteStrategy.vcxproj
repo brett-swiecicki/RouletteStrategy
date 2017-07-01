@@ -114,8 +114,11 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BruteOpt.h" />
+    <ClInclude Include="OptProcessor.h" />
     <ClInclude Include="ctpl_stl.h" />
+    <ClInclude Include="SharedParameters.h" />
+    <ClInclude Include="Solution.h" />
+    <ClInclude Include="StakeFinder.h" />
     <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>

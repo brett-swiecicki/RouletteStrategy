@@ -23,13 +23,22 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BruteOpt.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ctpl_stl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ThreadPool.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OptProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Solution.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StakeFinder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedParameters.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

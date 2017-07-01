@@ -34,14 +34,65 @@ private:
 
 class stakeFinder {
 public:
+	stakeFinder(OptimalSolutionProcessor* parent_in, Solution& solution_in)
+		: parentProcessor(parent_in), bestSolution(solution_in) {}
+
+	void setParametersForProcessing(vector<double>& dynamic_solution_in, int stake_number_in, int lastBetAdded_in, double cumulative_stake_in) {
+		dynamic_solution = dynamic_solution_in;
+		stake_number = stake_number_in;
+		lastBetAdded = lastBetAdded_in;
+		cumulative_stake = cumulative_stake_in;
+	}
+
 	void operator()() {
 		//This is what the threads will invoke. Thus this is where the recursion needs to begin occuring.
 	}
-private:
+	OptimalSolutionProcessor* parentProcessor;
+	Solution& bestSolution;
 	vector<double> dynamic_solution;
 	int stake_number;
 	int lastBetAdded;
 	double cumulative_stake;
+private:
+	void solutionFindRec() {
+		if (stake_number == (total_rolls - 1)) {
+			dynamic_solution[stake_number] = max_bet;
+			cumulative_stake += max_bet;
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
+			if (profitable) {
+				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
+				if ((dynamic_solution.size() > best_stakes.size()) ||
+					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
+					best_stakes = dynamic_solution;
+					best_win_EV_sum = dynamic_win_EV_sum;
+					solutionUpdated = true;
+				}
+			}
+			return;
+		}
+
+		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+			if (profitable) {
+				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
+			}
+		}
+	}
+	bool checkIfProfitable() {
+		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
+		if (allowBreakEven) {
+			if (profit < 0) {
+				return false;
+			}
+		}
+		else {
+			if (profit <= 0) {
+				return false;
+			}
+		}
+		return true;
+	}
 };
 
 class OptimalSolutionProcessor {
@@ -116,17 +167,15 @@ public:
 		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
 
 		if (total_rolls == 1) {
-			vector<double> stakesSolution(1);
-			stakesSolution[0] = max_bet;
-			optimalSolution.change_best_stakes(stakesSolution);
+			dynamic_solution_start.push_back(max_bet);
+			optimalSolution.change_best_stakes(dynamic_solution_start);
 			return;
 		}
 		
+		buildTasksVector();
 		bool limit_reached = false;
 		while (limit_reached == false) {
-			int startingStake = 0;
-			double startingCumulative = 0.0;
-			prepDynamicSolution(startingStake, startingCumulative); //Modifies startingStake, startingCumulative, and dynamic_solution
+			prepDynamicSolution(); //Modifies startingStake, startingCumulative, and dynamic_solution
 			solutionUpdated = false;
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
 			findSolutionWithThreadPool();
@@ -139,9 +188,9 @@ public:
 
 	void findSolutionWithThreadPool() {
 		thread_pool processing_pool(num_threads);
-		vector<stakeFinder> tasks_vector(possible_bets.size()); //Create functor objects aka tasks to send to the thread pool
 		for (int i = 0; i < (int)possible_bets.size(); ++i) {
-			//stake_number, cumulative_stake, lastBetAdded, dynamic_solution
+			//Modify the stakeFinder objects for processing
+			//vector<double>& dynamic_solution_in, int stake_number_in, int lastBetAdded_in, double cumulative_stake_in
 		}
 		
 
@@ -245,35 +294,24 @@ public:
 		cout << endl;
 	}
 
-private:
-	Solution optimalSolution;
 	vector<double> possible_bets;
-	vector<double> dynamic_solution;
+private:
+	Solution optimalSolution; //Still need to keep this separate because of the mutex
+	vector<double> dynamic_solution_start;
+	vector<stakeFinder> tasks_vector;
 	double min_bet;
 	double max_bet;
 	double min_increment;
+	double cumulative_stake_starting;
 	int payout_factor;
 	int board_hits;
 	int board_size;
 	int total_rolls;
+	int starting_stake;
 	unsigned num_threads;
 	bool solutionUpdated;
 	bool allowBreakEven;
 
-	bool checkIfProfitable(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
-		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
-		if (allowBreakEven) {
-			if (profit < 0) {
-				return false;
-			}
-		}
-		else {
-			if (profit <= 0) {
-				return false;
-			}
-		}
-		return true;
-	}
 
 	double getWinEV(const vector<double> &stakes_in) {
 		double winEVsum = 0;
@@ -339,31 +377,35 @@ private:
 		}
 	}
 
-	void prepDynamicSolution(int& startingStake, double& startingCumulative) {
-		dynamic_solution.resize(total_rolls);
+	void prepDynamicSolution() {
+		dynamic_solution_start.resize(total_rolls);
 
 		if (total_rolls >= ((payout_factor * 2) + 2)) {
 			//First payout_factor + 1 numbers can be set to min
 			if (allowBreakEven) {
-				startingStake = (payout_factor + 1);
+				starting_stake = (payout_factor + 1);
 				for (int i = 0; i < (payout_factor + 1); ++i) {
-					dynamic_solution[i] = min_bet;
-					startingCumulative += min_bet;
+					dynamic_solution_start[i] = min_bet;
+					cumulative_stake_starting += min_bet;
 				}
 			}
 			else {
-				startingStake = payout_factor;
+				starting_stake = payout_factor;
 				for (int i = 0; i < payout_factor; ++i) {
-					dynamic_solution[i] = min_bet;
-					startingCumulative += min_bet;
+					dynamic_solution_start[i] = min_bet;
+					cumulative_stake_starting += min_bet;
 				}
 			}
 		}
 		else {
-			startingStake = 1;
-			dynamic_solution[0] = min_bet;
-			startingCumulative += min_bet;
+			starting_stake = 1;
+			dynamic_solution_start[0] = min_bet;
+			cumulative_stake_starting += min_bet;
 		}
+	}
+
+	void buildTasksVector() {
+		tasks_vector.resize(possible_bets.size(), stakeFinder(this, optimalSolution));
 	}
 };
 

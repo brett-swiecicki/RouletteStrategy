@@ -66,7 +66,7 @@ public:
 			exit(1);
 		}
 		cout << "std::thread::hardware_concurrency() has determined that your system has access to ";
-		cout << std::thread::hardware_concurrency() << " threads available for parallelization." << endl;
+		cout << std::thread::hardware_concurrency() << " threads." << endl;
 		cout << "Is this number of threads acceptable? Y or N: ";
 		char useHardwareConcurrency;
 		cin >> useHardwareConcurrency;
@@ -209,8 +209,8 @@ private:
 		cout << left << setw(14) << setfill(separator) << "p(win exact)";
 		cout << left << setw(18) << setfill(separator) << "Sum p(win exact)";
 		cout << left << setw(19) << setfill(separator) << "p(lose on final)";
-		cout << left << setw(8) << setfill(separator) << "Win EV";
-		cout << left << setw(9) << setfill(separator) << "Loss EV";
+		cout << left << setw(10) << setfill(separator) << "Win EV";
+		cout << left << setw(11) << setfill(separator) << "Loss EV";
 		cout << endl;
 		for (int i = 0; i < 107; ++i) {
 			cout << "=";
@@ -239,6 +239,7 @@ private:
 
 	void prepDynamicSolution() {
 		dynamic_solution_start.resize(local_parameters.total_rolls);
+		local_parameters.cumulative_stake_starting = 0.0;
 
 		if (local_parameters.total_rolls >= ((local_parameters.payout_factor * 2) + 2)) {
 			//First payout_factor + 1 numbers can be set to min

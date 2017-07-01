@@ -50,7 +50,7 @@ private:
 			return;
 		}
 
-		for (int i = lastBetAdded; i < (int)bestSolution.get_best_size(); ++i) {
+		for (int i = lastBetAdded; i < (int)local_parameters.possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = local_parameters.possible_bets[i];
 			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + local_parameters.possible_bets[i]);
 			if (profitable) {

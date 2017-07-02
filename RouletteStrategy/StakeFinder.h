@@ -17,9 +17,10 @@ public:
 	stakeFinder(Solution& solution_in, SharedParameters& local_parameters_in)
 		: bestSolution(solution_in), local_parameters(local_parameters_in) {}
 
-	void setParametersForProcessing(vector<double>& dynamic_solution_in, int last_bet_in) {
+	void setParametersForProcessing(vector<double>& dynamic_solution_in, int last_bet_in, int total_rolls_in) {
 		dynamic_solution = dynamic_solution_in;
 		starting_last_bet = last_bet_in;
+		total_rolls = total_rolls_in;
 	}
 
 	void operator()() {
@@ -28,20 +29,21 @@ public:
 
 private:
 	Solution& bestSolution;
-	SharedParameters& local_parameters;
+	SharedParameters local_parameters;
 	vector<double> dynamic_solution;
 	int starting_last_bet;
+	int total_rolls;
 	
 
 	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
-		if (stake_number == (local_parameters.total_rolls - 1)) {
+		if (stake_number == (total_rolls - 1)) {
 			dynamic_solution[stake_number] = local_parameters.max_bet;
 			cumulative_stake += local_parameters.max_bet;
 			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
 			if (profitable) {
 				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-				if ((dynamic_solution.size() > bestSolution.get_best_size()) ||
-					(((dynamic_solution.size() == bestSolution.get_best_size()) && (dynamic_win_EV_sum > bestSolution.get_best_win_EV_sum())))) {
+				if ((total_rolls > bestSolution.get_best_size()) ||
+					(((total_rolls == bestSolution.get_best_size()) && (dynamic_win_EV_sum > bestSolution.get_best_win_EV_sum())))) {
 					bestSolution.change_best_stakes(dynamic_solution);
 					bestSolution.change_best_win_EV_sum(dynamic_win_EV_sum);
 					bestSolution.solutionUpdated();

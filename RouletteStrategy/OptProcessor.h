@@ -86,9 +86,9 @@ public:
 
 	void findSolution() {
 		setupPossibleBets();
-		local_parameters.total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
+		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
 
-		if (local_parameters.total_rolls == 1) {
+		if (total_rolls == 1) {
 			dynamic_solution_start.push_back(local_parameters.max_bet);
 			optimalSolution.change_best_stakes(dynamic_solution_start);
 			return;
@@ -100,9 +100,9 @@ public:
 		while (limit_reached == false) {
 			prepDynamicSolution();
 			optimalSolution.resetUpdated();
-			cout << "Currently computing strategies for " << local_parameters.total_rolls << " rolls." << endl;
+			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
 			findSolutionWithThreadPool(processing_pool);
-			++(local_parameters.total_rolls);
+			++total_rolls;
 			if (optimalSolution.checkUpdated() == false) {
 				limit_reached = true;
 			}
@@ -111,7 +111,7 @@ public:
 
 	void findSolutionWithThreadPool(thread_pool& processing_pool) {
 		for (int i = 0; i < ((int)local_parameters.possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
-			tasks_vector[i].setParametersForProcessing(dynamic_solution_start, i);
+			tasks_vector[i].setParametersForProcessing(dynamic_solution_start, i, total_rolls);
 		}
 		vector<std::future<void>> futures(local_parameters.possible_bets.size()); //Populate vector of futures by sending into the pool
 		for (int j = 0; j < ((int)local_parameters.possible_bets.size()); ++j) {
@@ -199,6 +199,7 @@ private:
 	vector<stakeFinder> tasks_vector;
 	double min_increment;
 	unsigned num_threads;
+	int total_rolls;
 
 	void printColumnHeaders() {
 		const char separator = ' ';
@@ -238,10 +239,10 @@ private:
 	}
 
 	void prepDynamicSolution() {
-		dynamic_solution_start.resize(local_parameters.total_rolls);
+		dynamic_solution_start.resize(total_rolls);
 		local_parameters.cumulative_stake_starting = 0.0;
 
-		if (local_parameters.total_rolls >= ((local_parameters.payout_factor * 2) + 2)) {
+		if (total_rolls >= ((local_parameters.payout_factor * 2) + 2)) {
 			//First payout_factor + 1 numbers can be set to min
 			if (local_parameters.allowBreakEven) {
 				local_parameters.starting_stake = (local_parameters.payout_factor + 1);

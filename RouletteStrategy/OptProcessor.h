@@ -95,12 +95,13 @@ public:
 		}
 		
 		buildTasksVector();
+		thread_pool processing_pool(num_threads);
 		bool limit_reached = false;
 		while (limit_reached == false) {
 			prepDynamicSolution();
 			optimalSolution.resetUpdated();
 			cout << "Currently computing strategies for " << local_parameters.total_rolls << " rolls." << endl;
-			findSolutionWithThreadPool();
+			findSolutionWithThreadPool(processing_pool);
 			++(local_parameters.total_rolls);
 			if (optimalSolution.checkUpdated() == false) {
 				limit_reached = true;
@@ -108,8 +109,7 @@ public:
 		}
 	}
 
-	void findSolutionWithThreadPool() {
-		thread_pool processing_pool(num_threads);
+	void findSolutionWithThreadPool(thread_pool& processing_pool) {
 		for (int i = 0; i < ((int)local_parameters.possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
 			tasks_vector[i].setParametersForProcessing(dynamic_solution_start, i);
 		}

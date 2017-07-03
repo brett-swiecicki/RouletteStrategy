@@ -11,7 +11,8 @@
 #include <Windows.h>
 #include <wchar.h>
 
-#include "ThreadPool.h"
+#include "thread_pool.hpp"
+
 #include "Solution.h"
 #include "StakeFinder.h"
 #include "SharedParameters.h"
@@ -95,30 +96,16 @@ public:
 		}
 		
 		buildTasksVector();
-		thread_pool processing_pool(num_threads);
 		bool limit_reached = false;
 		while (limit_reached == false) {
 			prepDynamicSolution();
 			optimalSolution.resetUpdated();
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			findSolutionWithThreadPool(processing_pool);
+			findSolutionWithThreads();
 			++total_rolls;
 			if (optimalSolution.checkUpdated() == false) {
 				limit_reached = true;
 			}
-		}
-	}
-
-	void findSolutionWithThreadPool(thread_pool& processing_pool) {
-		for (int i = 0; i < ((int)local_parameters.possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
-			tasks_vector[i].setParametersForProcessing(dynamic_solution_start, i, total_rolls);
-		}
-		vector<std::future<void>> futures(local_parameters.possible_bets.size()); //Populate vector of futures by sending into the pool
-		for (int j = 0; j < ((int)local_parameters.possible_bets.size()); ++j) {
-			futures[j] = processing_pool.submit(tasks_vector[j]);
-		}
-		for (int p = 0; p < ((int)futures.size()); ++p) { //Program can't continue until all tasks complete in pool
-			futures[p].get();
 		}
 	}
 
@@ -195,11 +182,53 @@ public:
 private:
 	Solution optimalSolution; //Still need to keep this separate because of the mutex
 	SharedParameters local_parameters;
+	std::vector<std::thread> threads;
 	vector<double> dynamic_solution_start;
 	vector<stakeFinder> tasks_vector;
 	double min_increment;
 	unsigned num_threads;
 	int total_rolls;
+
+	void findSolutionWithThreads() {
+		refreshStakeFinders();
+		for (int q = 0; q < (int)tasks_vector.size(); ++q) {
+			threads[q] = std::thread(tasks_vector[q]);
+		}
+		for (int i = 0; i < (int)threads.size(); ++i){
+			threads[i].join();
+		}
+	}
+
+	void refreshStakeFinders() { //This will be the function that has to partition the work among each stakeFinder object
+		if ((((int)local_parameters.possible_bets.size()) % ((int)(num_threads))) == 0) {
+			//Every thread can do an equal amount of work
+			int bets_to_process = (((int)local_parameters.possible_bets.size()) / ((int)(num_threads)));
+			int starting_bet = 0;
+			for (int i = 0; i < ((int)tasks_vector.size()); ++i) {
+				tasks_vector[i].setParametersForProcessing(dynamic_solution_start, total_rolls, starting_bet, 
+					starting_bet + bets_to_process);
+				starting_bet += bets_to_process;
+			}
+		}
+		else { //Some threads will have to do more work than others
+			int floor = (((int)local_parameters.possible_bets.size()) / ((int)(num_threads)));
+			int remainder = (((int)local_parameters.possible_bets.size()) / ((int)(num_threads)));
+			int i = 0;
+			int starting_bet = 0;
+			while (i < remainder) { //These stakeFinders will have to do floor + 1
+				tasks_vector[i].setParametersForProcessing(dynamic_solution_start, total_rolls, starting_bet,
+					(starting_bet + floor + 1));
+				starting_bet += (floor + 1);
+				++i;
+			}
+			while (i < ((int)tasks_vector.size())) { //These stakeFinders will only have to do the floor
+				tasks_vector[i].setParametersForProcessing(dynamic_solution_start, total_rolls, starting_bet,
+					(starting_bet + floor));
+				starting_bet += (floor);
+				++i;
+			}
+		}
+	}
 
 	void printColumnHeaders() {
 		const char separator = ' ';
@@ -267,34 +296,8 @@ private:
 	}
 
 	void buildTasksVector() {
-		tasks_vector.resize(local_parameters.possible_bets.size(), stakeFinder(optimalSolution, local_parameters));
-	}
-
-	double getWinEV(const vector<double> &stakes_in) {
-		double winEVsum = 0;
-		double p_win_single_roll = ((double)local_parameters.board_hits / (double)local_parameters.board_size);
-		double p_loss_single_roll = 1.0 - p_win_single_roll;
-
-		double cumulative_stake = 0.0;
-		double p_loss_prev;
-		double p_win_exact_roll;
-
-		for (int i = 0; i < (int)stakes_in.size(); ++i) {
-			cumulative_stake += stakes_in[i];
-			double profit = (((local_parameters.payout_factor + 1) * stakes_in[i]) - cumulative_stake);
-
-			if (i != 0) {
-				p_win_exact_roll = p_win_single_roll * p_loss_prev;
-				p_loss_prev = p_loss_prev * p_loss_single_roll;
-			}
-			else {
-				p_win_exact_roll = p_win_single_roll;
-				p_loss_prev = p_loss_single_roll;
-			}
-
-			winEVsum += (p_win_exact_roll * profit);
-		}
-		return winEVsum;
+		tasks_vector.resize(num_threads, stakeFinder(optimalSolution, local_parameters));
+		threads.resize(num_threads);
 	}
 };
 

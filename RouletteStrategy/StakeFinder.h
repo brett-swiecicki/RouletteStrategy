@@ -17,22 +17,26 @@ public:
 	stakeFinder(Solution& solution_in, SharedParameters& local_parameters_in)
 		: bestSolution(solution_in), local_parameters(local_parameters_in) {}
 
-	void setParametersForProcessing(vector<double>& dynamic_solution_in, int last_bet_in, int total_rolls_in) {
+	void setParametersForProcessing(vector<double>& dynamic_solution_in, int total_rolls_in, int first_bet_in, int last_bet_in) {
 		dynamic_solution = dynamic_solution_in;
-		starting_last_bet = last_bet_in;
 		total_rolls = total_rolls_in;
+		first_bet_inclusive = first_bet_in;
+		last_bet_exclusive = last_bet_in;
 	}
 
 	void operator()() {
-		solutionFindRec(local_parameters.starting_stake, local_parameters.cumulative_stake_starting, starting_last_bet);
+		for (int i = first_bet_inclusive; i < last_bet_exclusive; ++i) {
+			solutionFindRec(local_parameters.starting_stake, local_parameters.cumulative_stake_starting, i);
+		}
 	}
 
 private:
 	Solution& bestSolution;
 	SharedParameters local_parameters;
 	vector<double> dynamic_solution;
-	int starting_last_bet;
 	int total_rolls;
+	int first_bet_inclusive;
+	int last_bet_exclusive;
 	
 
 	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {

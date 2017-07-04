@@ -14,7 +14,7 @@ using namespace std;
 
 class stakeFinder {
 public:
-	stakeFinder(Solution& solution_in, SharedParameters& local_parameters_in)
+	stakeFinder(Solution* solution_in, SharedParameters& local_parameters_in)
 		: bestSolution(solution_in), local_parameters(local_parameters_in) {}
 
 	void setParametersForProcessing(vector<double>& dynamic_solution_in, int total_rolls_in, int first_bet_in, int last_bet_in) {
@@ -31,7 +31,7 @@ public:
 	}
 
 private:
-	Solution& bestSolution;
+	Solution* bestSolution;
 	SharedParameters local_parameters;
 	vector<double> dynamic_solution;
 	int total_rolls;
@@ -46,11 +46,11 @@ private:
 			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
 			if (profitable) {
 				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-				if ((total_rolls > bestSolution.get_best_size()) ||
-					(((total_rolls == bestSolution.get_best_size()) && (dynamic_win_EV_sum > bestSolution.get_best_win_EV_sum())))) {
-					bestSolution.change_best_stakes(dynamic_solution);
-					bestSolution.change_best_win_EV_sum(dynamic_win_EV_sum);
-					bestSolution.solutionUpdated();
+				if ((total_rolls > (int)bestSolution->get_best_size()) ||
+					(((total_rolls == (int)bestSolution->get_best_size()) && (dynamic_win_EV_sum > bestSolution->get_best_win_EV_sum())))) {
+					bestSolution->change_best_stakes(dynamic_solution);
+					bestSolution->change_best_win_EV_sum(dynamic_win_EV_sum);
+					bestSolution->solutionUpdated();
 				}
 			}
 			return;

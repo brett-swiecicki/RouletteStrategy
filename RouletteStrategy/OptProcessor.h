@@ -8,10 +8,7 @@
 #include <math.h>
 #include <thread>
 #include <mutex>
-#include <Windows.h>
-#include <wchar.h>
-
-#include "thread_pool.hpp"
+#include <time.h>
 
 #include "Solution.h"
 #include "StakeFinder.h"
@@ -20,14 +17,6 @@ using namespace std;
 
 class OptimalSolutionProcessor {
 public:
-
-	void displaytime() {
-		//display current time - possibly convert to clock time and not military
-		SYSTEMTIME time;
-		GetLocalTime(&time);
-		wprintf(L"The Local Time: %02d:%02d:%02d\n", time.wHour, time.wMinute, time.wSecond);
-		cout << endl;
-	}
 
 	void getInput() {
 		cout << "Enter the table minimum bet: ";
@@ -68,7 +57,7 @@ public:
 		}
 		cout << "std::thread::hardware_concurrency() has determined that your system has access to ";
 		cout << std::thread::hardware_concurrency() << " threads." << endl;
-		cout << "Is this number of threads acceptable? Y or N: ";
+		cout << "Do you believe this number is accurate? Y or N: ";
 		char useHardwareConcurrency;
 		cin >> useHardwareConcurrency;
 		if ((useHardwareConcurrency == 'Y') || (useHardwareConcurrency == 'y') || (useHardwareConcurrency == '1')) {
@@ -86,6 +75,9 @@ public:
 	} //End of getInput
 
 	void findSolution() {
+		//Start Clock!
+		clock_t t;
+		t = clock();
 		setupPossibleBets();
 		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
 
@@ -107,6 +99,9 @@ public:
 				limit_reached = true;
 			}
 		}
+		//Print running time!
+		t = clock() - t;
+		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
 	}
 
 	void printOutputTable() {
@@ -119,7 +114,7 @@ public:
 		double cumulative_stake = 0.0;
 		double p_win_single_roll = ((double)local_parameters.board_hits / (double)local_parameters.board_size);
 		double p_loss_single_roll = 1.0 - p_win_single_roll;
-		double p_loss_prev;
+		double p_loss_prev = 0;
 		double p_win_exact_sum = 0;
 		double p_lose_on_final = 0;
 		double loss_EV = 0;
@@ -191,6 +186,7 @@ private:
 
 	void findSolutionWithThreads() {
 		refreshStakeFinders();
+		//Should maybe go back to thread pool. Problem with these is some threads may end way earlier than others.
 		for (int q = 0; q < (int)tasks_vector.size(); ++q) {
 			threads[q] = std::thread(tasks_vector[q]);
 		}
@@ -212,7 +208,7 @@ private:
 		}
 		else { //Some threads will have to do more work than others
 			int floor = (((int)local_parameters.possible_bets.size()) / ((int)(num_threads)));
-			int remainder = (((int)local_parameters.possible_bets.size()) / ((int)(num_threads)));
+			int remainder = (((int)local_parameters.possible_bets.size()) % ((int)(num_threads)));
 			int i = 0;
 			int starting_bet = 0;
 			while (i < remainder) { //These stakeFinders will have to do floor + 1
@@ -296,7 +292,7 @@ private:
 	}
 
 	void buildTasksVector() {
-		tasks_vector.resize(num_threads, stakeFinder(optimalSolution, local_parameters));
+		tasks_vector.resize(num_threads, stakeFinder(&optimalSolution, local_parameters));
 		threads.resize(num_threads);
 	}
 };

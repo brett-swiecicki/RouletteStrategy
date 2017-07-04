@@ -11,6 +11,7 @@
 #include <mutex>
 #include <time.h>
 
+#include "ThreadPool.h"
 #include "Solution.h"
 #include "StakeFinder.h"
 #include "SharedParameters.h"
@@ -199,7 +200,18 @@ private:
 	*/
 
 	void findSolutionWithThreadPool() {
-		
+		ThreadPool processing_pool(num_threads);
+		for (int i = 0; i < ((int)local_parameters.possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
+			tasks_vector[i].setParametersForProcessing(dynamic_solution_start, total_rolls, i);
+		}
+		vector<std::future<void>> futures(local_parameters.possible_bets.size());
+		for (int j = 0; j < ((int)local_parameters.possible_bets.size()); ++j) {
+			futures[j] = processing_pool.enqueue(std::ref(tasks_vector[j]));
+		}
+		for (int p = 0; p < ((int)futures.size()); ++p) { //Program can't continue until all tasks complete in pool
+			futures[p].get();
+		}
+
 		/*
 		for (int i = 0; i < ((int)local_parameters.possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
 			tasks_vector[i].setParametersForProcessing(dynamic_solution_start, i, total_rolls);

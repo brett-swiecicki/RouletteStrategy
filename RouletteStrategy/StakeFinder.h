@@ -17,32 +17,31 @@ public:
 	stakeFinder(Solution* solution_in, SharedParameters& local_parameters_in)
 		: bestSolution(solution_in), local_parameters(local_parameters_in) {}
 
-	void setParametersForProcessing(vector<double>& dynamic_solution_in, int total_rolls_in, int starting_last_bet_in) {
+	void setParametersForProcessing(vector<double>& dynamic_solution_in, vector<int>& starting_bets_in, int total_rolls_in) {
 		dynamic_solution = dynamic_solution_in;
+		starting_bets = starting_bets_in;
 		total_rolls = total_rolls_in;
-		starting_last_bet = starting_last_bet_in;
-		//first_bet_inclusive = first_bet_in;
-		//last_bet_exclusive = last_bet_in;
 	}
 
 	void operator()() {
-		/*
-		for (int i = first_bet_inclusive; i < last_bet_exclusive; ++i) {
-			solutionFindRec(local_parameters.starting_stake, local_parameters.cumulative_stake_starting, i);
+		for (int i = 0; i < (int)starting_bets.size(); ++i) {
+			solutionFindRec(local_parameters.starting_stake, local_parameters.cumulative_stake_starting, starting_bets[i]);
 		}
-		*/
-		solutionFindRec(local_parameters.starting_stake, local_parameters.cumulative_stake_starting, starting_last_bet);
+		updateGlobalSolution();
 	}
 
 private:
 	Solution* bestSolution;
 	SharedParameters local_parameters;
 	vector<double> dynamic_solution;
+	vector<double> best_stakes;
+	vector<int> starting_bets;
+	double best_win_EV_sum = 0.0;
 	int total_rolls;
-	int starting_last_bet;
-	//int first_bet_inclusive;
-	//int last_bet_exclusive;
 	
+	void updateGlobalSolution() {
+		bestSolution->change_best_stakes(best_stakes, best_win_EV_sum);
+	}
 
 	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
 		if (stake_number == (total_rolls - 1)) {
@@ -51,12 +50,18 @@ private:
 			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
 			if (profitable) {
 				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
+				if (dynamic_win_EV_sum > best_win_EV_sum) {
+					best_stakes = dynamic_solution;
+					best_win_EV_sum = dynamic_win_EV_sum;
+				}
+				/*
 				if ((total_rolls > (int)bestSolution->get_best_size()) ||
 					(((total_rolls == (int)bestSolution->get_best_size()) && (dynamic_win_EV_sum > bestSolution->get_best_win_EV_sum())))) {
 					bestSolution->change_best_stakes(dynamic_solution);
 					bestSolution->change_best_win_EV_sum(dynamic_win_EV_sum);
 					bestSolution->solutionUpdated();
 				}
+				*/
 			}
 			return;
 		}

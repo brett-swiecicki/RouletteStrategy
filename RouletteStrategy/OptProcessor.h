@@ -11,7 +11,7 @@
 #include <mutex>
 #include <time.h>
 
-#include "ThreadPool.h"
+//#include "ThreadPool.h"
 #include "Solution.h"
 #include "StakeFinder.h"
 #include "SharedParameters.h"
@@ -85,7 +85,7 @@ public:
 
 		if (total_rolls == 1) {
 			dynamic_solution_start.push_back(local_parameters.max_bet);
-			optimalSolution.change_best_stakes(dynamic_solution_start);
+			optimalSolution.change_best_stakes(dynamic_solution_start, ((((double)local_parameters.board_hits / (double)local_parameters.board_size)) * (local_parameters.payout_factor * local_parameters.max_bet)));
 			return;
 		}
 		
@@ -95,7 +95,7 @@ public:
 			prepDynamicSolution();
 			optimalSolution.resetUpdated();
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			findSolutionWithThreadPool();
+			findSolutionWithThreads();
 			++total_rolls;
 			if (optimalSolution.checkUpdated() == false) {
 				limit_reached = true;
@@ -186,19 +186,7 @@ private:
 	unsigned num_threads;
 	int total_rolls;
 
-	/* For partition method:
-	void findSolutionWithThreads() {
-		refreshStakeFinders();
-		//Should maybe go back to thread pool. Problem with these is some threads may end way earlier than others.
-		for (int q = 0; q < (int)tasks_vector.size(); ++q) {
-			threads[q] = std::thread(tasks_vector[q]);
-		}
-		for (int i = 0; i < (int)threads.size(); ++i){
-			threads[i].join();
-		}
-	}
-	*/
-
+	/* For pool method:
 	void findSolutionWithThreadPool() {
 		ThreadPool processing_pool(num_threads);
 		for (int i = 0; i < ((int)local_parameters.possible_bets.size()); ++i) { //Modify the stakeFinder objects for processing
@@ -223,11 +211,37 @@ private:
 		for (int p = 0; p < ((int)futures.size()); ++p) { //Program can't continue until all tasks complete in pool
 			futures[p].get();
 		}
-		*/
+		
+	}
+	*/
+
+	void findSolutionWithThreads() {
+		refreshStakeFinders();
+		//Should maybe go back to thread pool. Problem with these is some threads may end way earlier than others.
+		for (int q = 0; q < (int)tasks_vector.size(); ++q) {
+			threads[q] = std::thread(tasks_vector[q]);
+		}
+		for (int i = 0; i < (int)threads.size(); ++i) {
+			threads[i].join();
+		}
 	}
 
-	/*
 	void refreshStakeFinders() { //This will be the function that has to partition the work among each stakeFinder object
+		//1. Make the starting_bets vectors for each task vector
+		vector<vector<int>> starting_bet_vectors(num_threads);
+		int vec_to_push = 0;
+		for (int i = 0; i < (int)local_parameters.possible_bets.size(); ++i) {
+			starting_bet_vectors[vec_to_push].push_back(i);
+			++vec_to_push;
+			if (vec_to_push == (int)num_threads) {
+				vec_to_push = 0;
+			}
+		}
+		//2.Update the task objects in the task vector
+		for (int j = 0; j < ((int)tasks_vector.size()); ++j) {
+			tasks_vector[j].setParametersForProcessing(dynamic_solution_start, starting_bet_vectors[j], total_rolls);
+		}
+		/*
 		if ((((int)local_parameters.possible_bets.size()) % ((int)(num_threads))) == 0) {
 			//Every thread can do an equal amount of work
 			int bets_to_process = (((int)local_parameters.possible_bets.size()) / ((int)(num_threads)));
@@ -256,8 +270,8 @@ private:
 				++i;
 			}
 		}
+		*/
 	}
-	*/
 	
 	void printColumnHeaders() {
 		const char separator = ' ';
@@ -325,12 +339,11 @@ private:
 	}
 
 	void buildTasksVector() {
-		/* For partition method:
+		//For partition method:
 		tasks_vector.resize(num_threads, stakeFinder(&optimalSolution, local_parameters));
 		threads.resize(num_threads);
-		*/
 		//For thread pool method:
-		tasks_vector.resize(local_parameters.possible_bets.size(), stakeFinder(&optimalSolution, local_parameters));
+		//tasks_vector.resize(local_parameters.possible_bets.size(), stakeFinder(&optimalSolution, local_parameters));
 	}
 };
 

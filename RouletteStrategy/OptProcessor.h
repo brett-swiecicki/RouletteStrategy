@@ -83,6 +83,8 @@ public:
 		if (total_rolls == 1) {
 			best_stakes.resize(total_rolls);
 			best_stakes[0] = max_bet;
+			all_solutions.push_back(best_stakes);
+			printOutputTable(0);
 			return;
 		}
 		
@@ -104,9 +106,10 @@ public:
 		}
 		t = clock() - t; //Print running time!
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
+		printOutputTable(((int)all_solutions.size()) - 1); //Convert to actual index
 	}
 
-	void printOutputTable() {
+	void printOutputTable(int index_to_print) {
 		cout << std::setprecision(2);
 		cout << std::fixed; //Disable scientific notation for large numbers
 		cout << endl;
@@ -121,11 +124,13 @@ public:
 		double p_lose_on_final = 0;
 		double loss_EV = 0;
 		double p_win_exact;
+		vector<double>& desired_solution = all_solutions[index_to_print];
+		double desired_win_EV_sum = getWinEV(desired_solution);
 
-		for (int i = 0; i < (int)best_stakes.size(); ++i) {
+		for (int i = 0; i < (int)desired_solution.size(); ++i) {
 			//** Computations */
-			cumulative_stake += best_stakes[i];
-			double profit = (((payout_factor + 1) * best_stakes[i]) - cumulative_stake);
+			cumulative_stake += desired_solution[i];
+			double profit = (((payout_factor + 1) * desired_solution[i]) - cumulative_stake);
 
 			if (i != 0) {
 				p_win_exact = p_win_single_roll * p_loss_prev;
@@ -141,13 +146,13 @@ public:
 			//** Output */
 			cout << std::setprecision(2);
 			cout << left << setw(6) << setfill(separator) << (i + 1); //Roll number
-			cout << left << setw(10) << setfill(separator) << (best_stakes[i]); //Stake
+			cout << left << setw(10) << setfill(separator) << (desired_solution[i]); //Stake
 			cout << left << setw(12) << setfill(separator) << cumulative_stake;
 			cout << left << setw(10) << setfill(separator) << profit;
 			cout << std::setprecision(5);
 			cout << left << setw(14) << setfill(separator) << p_win_exact;
 			cout << left << setw(18) << setfill(separator) << p_win_exact_sum;
-			if (i != ((int)best_stakes.size() - 1)) {
+			if (i != ((int)desired_solution.size() - 1)) {
 				cout << left << setw(19) << setfill(separator) << "-------";
 			}
 			else {
@@ -157,7 +162,7 @@ public:
 			}
 			cout << left << setw(10) << setfill(separator) << win_EV;
 
-			if (i != ((int)best_stakes.size() - 1)) {
+			if (i != ((int)desired_solution.size() - 1)) {
 				cout << left << setw(11) << setfill(separator) << "-------";
 			}
 			else {
@@ -170,16 +175,38 @@ public:
 		}
 
 		cout << endl;
-		cout << "Win EV Sum " << best_win_EV_sum << endl;
-		cout << "Net EV " << (best_win_EV_sum - loss_EV) << endl;
+		cout << "Win EV Sum " << desired_win_EV_sum << endl;
+		cout << "Net EV " << (desired_win_EV_sum - loss_EV) << endl;
 		cout << endl;
 	}
 
 	void queryForAdditionalTables() {
-		system("Pause");
+		char printMore;
+		int smallest_roll_count = (int)all_solutions.front().size();
+		int largest_roll_count = (int)all_solutions.back().size();
+
+		while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
+			cout << "Would you like to see the output for another solution? Y or N: ";
+			if ((printMore == 'Y') || (printMore == 'y') || (printMore == '1')) {
+				cout << "Enter the number of rolls for which you would like to see a solution: ";
+				int desiredSolution;
+				cin >> desiredSolution;
+				if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
+					int actual_index = (largest_roll_count - desiredSolution);
+					printOutputTable(actual_index);
+				}
+				else {
+					cout << "Sorry! " << desiredSolution << " does not have a computed solution!";
+				}
+			}
+			else if ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
+				break;
+			}
+		}	
 	}
 
 private:
+	vector<vector<double>> all_solutions;
 	vector<double> possible_bets;
 	vector<double> dynamic_solution;
 	vector<double> best_stakes;

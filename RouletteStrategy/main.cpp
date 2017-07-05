@@ -13,6 +13,5 @@ int main() {
 	OptimalSolutionProcessor myProcessor;
 	myProcessor.getInput();
 	myProcessor.findSolution();
-	myProcessor.printOutputTable();
 	myProcessor.queryForAdditionalTables();
 }

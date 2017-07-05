@@ -277,6 +277,9 @@ private:
 				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + bet_considered, lastBetAddedCounter);
 			}
 			++lastBetAddedCounter;
+			if (lastBetAddedCounter == (int)possible_bets.size()) {
+				break;
+			}
 			bet_considered = possible_bets[lastBetAddedCounter];
 		}
 	}
@@ -316,6 +319,9 @@ private:
 				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + bet_considered, lastBetAddedCounter);
 			}
 			++lastBetAddedCounter;
+			if (lastBetAddedCounter == (int)possible_bets.size()) {
+				break;
+			}
 			bet_considered = possible_bets[lastBetAddedCounter];
 		}
 	}

@@ -1,20 +1,25 @@
 //Brett Swiecicki
-#ifndef OPTPROCESSOR_H
-#define OPTPROCESSOR_H
+#ifndef BRUTEOPT_H
+#define BRUTEOPT_H
 
 #include <iostream>
 #include <iomanip>
 #include <vector>
 #include <math.h>
-#include <future>
-#include <thread>
-#include <mutex>
-#include <time.h>
-
+#include <Windows.h>
+#include <wchar.h>
 using namespace std;
 
 class OptimalSolutionProcessor {
 public:
+
+	void displaytime() {
+		//display current time - possibly convert to clock time and not military
+		SYSTEMTIME time;
+		GetLocalTime(&time);
+		wprintf(L"The Local Time: %02d:%02d:%02d\n", time.wHour, time.wMinute, time.wSecond);
+		cout << endl;
+	}
 
 	void getInput() {
 		cout << "Enter the table minimum bet: ";
@@ -23,19 +28,6 @@ public:
 		cin >> max_bet;
 		cout << "Enter the table minimum bet increment: ";
 		cin >> min_increment;
-		cout << "American or European? A or E: ";
-		char AmOrEur;
-		cin >> AmOrEur;
-		if ((AmOrEur == 'A') || (AmOrEur == 'a')) {
-			board_size = 38;
-		}
-		else if ((AmOrEur == 'E') || (AmOrEur == 'e')) {
-			board_size = 37;
-		}
-		else {
-			cerr << "Incorrect selection was made: " << AmOrEur << endl;
-			exit(1);
-		}
 		cout << "Enter the payout factor [__ to 1]: ";
 		cin >> payout_factor;
 		cout << "Enter the number of winning table positions: ";
@@ -53,32 +45,31 @@ public:
 			cerr << "Incorrect selection was made: " << breakEven << endl;
 			exit(1);
 		}
-		/*
-		cout << "std::thread::hardware_concurrency() has determined that your system has access to ";
-		cout << std::thread::hardware_concurrency() << " threads." << endl;
-		cout << "Do you believe this number is accurate? Y or N: ";
-		char useHardwareConcurrency;
-		cin >> useHardwareConcurrency;
-		if ((useHardwareConcurrency == 'Y') || (useHardwareConcurrency == 'y') || (useHardwareConcurrency == '1')) {
-			num_threads = std::thread::hardware_concurrency();
+		cout << "American or European? A or E: ";
+		char AmOrEur;
+		cin >> AmOrEur;
+		if ((AmOrEur == 'A') || (AmOrEur == 'a')) {
+			board_size = 38;
 		}
-		else if ((useHardwareConcurrency == 'N') || (useHardwareConcurrency == 'n') || (useHardwareConcurrency == '0')) {
-			cout << "Please enter the number of threads you would like the program to utilize: ";
-			cin >> num_threads;
+		else if ((AmOrEur == 'E') || (AmOrEur == 'e')) {
+			board_size = 37;
 		}
 		else {
-			cerr << "Incorrect selection was made: " << useHardwareConcurrency << endl;
+			cerr << "Incorrect selection was made: " << AmOrEur << endl;
 			exit(1);
 		}
-		*/
 		cout << endl;
 	} //End of getInput
 
 	void findSolution() {
-		clock_t t; //Start Clock!
-		t = clock();
-		setupPossibleBets();
-		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
+		double insertBet = min_bet;
+		while (insertBet <= max_bet) {
+			possible_bets.push_back(insertBet);
+			insertBet += min_increment;
+		}
+		best_win_EV_sum = 0;
+		bool limit_reached = false;
+		total_rolls = getLowestBoundRolls(); //Linear incrementation
 
 		if (total_rolls == 1) {
 			best_stakes.resize(total_rolls);
@@ -86,19 +77,67 @@ public:
 			return;
 		}
 		
-		bool limit_reached = false;
 		while (limit_reached == false) {
-			prepDynamicSolution();
+			int startingStake;
+			double startingCumulative = 0.0;
+			dynamic_solution.resize(total_rolls);
+			if (total_rolls >= ((payout_factor * 2) + 2)) {
+				//First payout_factor + 1 numbers can be set to min
+				if (allowBreakEven) {
+					startingStake = (payout_factor + 1);
+					for (int i = 0; i < (payout_factor + 1); ++i) {
+						dynamic_solution[i] = min_bet;
+						startingCumulative += min_bet;
+					}
+				}
+				else {
+					startingStake = payout_factor;
+					for (int i = 0; i < payout_factor; ++i) {
+						dynamic_solution[i] = min_bet;
+						startingCumulative += min_bet;
+					}
+				}
+			}
+			else {
+				startingStake = 1;
+				dynamic_solution[0] = min_bet;
+				startingCumulative += min_bet;
+			}
 			solutionUpdated = false;
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			solutionFindRec(starting_stake, starting_cumulative, 0);
+			solutionFindRec(startingStake, startingCumulative, 0);
 			++total_rolls;
 			if (solutionUpdated == false) {
 				limit_reached = true;
 			}
 		}
-		t = clock() - t; //Print running time!
-		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
+	}
+
+	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
+		if (stake_number == (total_rolls - 1)) {
+			dynamic_solution[stake_number] = max_bet;
+			cumulative_stake += max_bet;
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
+			if (profitable) {
+				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
+				if ((dynamic_solution.size() > best_stakes.size()) ||
+					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
+					best_stakes = dynamic_solution;
+					best_win_EV_sum = dynamic_win_EV_sum;
+					solutionUpdated = true;
+				}
+			}
+			return;
+		}
+		
+
+		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+			if (profitable) {
+				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
+			}
+		}
 	}
 
 	void printOutputTable() {
@@ -111,7 +150,7 @@ public:
 		double cumulative_stake = 0.0;
 		double p_win_single_roll = ((double)board_hits / (double)board_size);
 		double p_loss_single_roll = 1.0 - p_win_single_roll;
-		double p_loss_prev = 0;
+		double p_loss_prev;
 		double p_win_exact_sum = 0;
 		double p_lose_on_final = 0;
 		double loss_EV = 0;
@@ -178,40 +217,12 @@ private:
 	double min_bet;
 	double max_bet;
 	double min_increment;
-	double starting_cumulative;
-	int starting_stake;
 	int payout_factor;
 	int board_hits;
 	int board_size;
 	int total_rolls;
 	bool solutionUpdated;
 	bool allowBreakEven;
-
-	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
-		if (stake_number == (total_rolls - 1)) {
-			dynamic_solution[stake_number] = max_bet;
-			cumulative_stake += max_bet;
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
-			if (profitable) {
-				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-				if ((dynamic_solution.size() > best_stakes.size()) ||
-					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-					best_stakes = dynamic_solution;
-					best_win_EV_sum = dynamic_win_EV_sum;
-					solutionUpdated = true;
-				}
-			}
-			return;
-		}
-
-		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (profitable) {
-				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
-			}
-		}
-	}
 
 	bool checkIfProfitable(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
 		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
@@ -254,7 +265,7 @@ private:
 		}
 		return winEVsum;
 	}
-	
+
 	void printColumnHeaders() {
 		const char separator = ' ';
 		cout << left << setw(6) << setfill(separator) << "Roll";
@@ -264,8 +275,8 @@ private:
 		cout << left << setw(14) << setfill(separator) << "p(win exact)";
 		cout << left << setw(18) << setfill(separator) << "Sum p(win exact)";
 		cout << left << setw(19) << setfill(separator) << "p(lose on final)";
-		cout << left << setw(10) << setfill(separator) << "Win EV";
-		cout << left << setw(11) << setfill(separator) << "Loss EV";
+		cout << left << setw(8) << setfill(separator) << "Win EV";
+		cout << left << setw(9) << setfill(separator) << "Loss EV";
 		cout << endl;
 		for (int i = 0; i < 107; ++i) {
 			cout << "=";
@@ -275,7 +286,7 @@ private:
 
 	int getLowestBoundRolls() {
 		int num_rolls = 0;
-		double betFactor = 1 + (1.0 / (double)payout_factor);
+		double betFactor = 1 + (1.0 / payout_factor);
 		double bet = min_bet;
 		while (bet <= max_bet) {
 			++num_rolls;
@@ -283,43 +294,6 @@ private:
 		}
 		return num_rolls;
 	}
-
-	void setupPossibleBets() {
-		double insertBet = min_bet;
-		while (insertBet <= max_bet) {
-			possible_bets.push_back(insertBet);
-			insertBet += min_increment;
-		}
-	}
-
-	void prepDynamicSolution() {
-		dynamic_solution.resize(total_rolls);
-		starting_cumulative = 0.0;
-
-		if (total_rolls >= ((payout_factor * 2) + 2)) {
-			//First payout_factor + 1 numbers can be set to min
-			if (allowBreakEven) {
-				starting_stake = (payout_factor + 1);
-				for (int i = 0; i < (payout_factor + 1); ++i) {
-					dynamic_solution[i] = min_bet;
-					starting_cumulative += min_bet;
-				}
-			}
-			else {
-				starting_stake = payout_factor;
-				for (int i = 0; i < payout_factor; ++i) {
-					dynamic_solution[i] = min_bet;
-					starting_cumulative += min_bet;
-				}
-			}
-		}
-		else {
-			starting_stake = 1;
-			dynamic_solution[0] = min_bet;
-			starting_cumulative += min_bet;
-		}
-	}
-
 };
 
 #endif

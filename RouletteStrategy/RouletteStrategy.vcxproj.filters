@@ -23,23 +23,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ThreadPool.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OptProcessor.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Solution.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StakeFinder.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SharedParameters.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="Soaring-in.txt">
       <Filter>Source Files\Tests</Filter>
     </Text>
@@ -54,5 +37,10 @@
     <None Include="Makefile">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="OptProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

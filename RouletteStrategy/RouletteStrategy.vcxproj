@@ -115,10 +115,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OptProcessor.h" />
-    <ClInclude Include="SharedParameters.h" />
-    <ClInclude Include="Solution.h" />
-    <ClInclude Include="StakeFinder.h" />
-    <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Notes.txt" />

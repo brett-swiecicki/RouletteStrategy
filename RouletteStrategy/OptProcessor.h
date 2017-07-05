@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <unordered_map>
 #include <math.h>
 #include <future>
 #include <thread>
@@ -77,17 +78,19 @@ public:
 	void findSolution() {
 		clock_t t; //Start Clock!
 		t = clock();
-		setupPossibleBets();
 		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
 
 		if (total_rolls == 1) {
 			best_stakes.resize(total_rolls);
 			best_stakes[0] = max_bet;
 			all_solutions.push_back(best_stakes);
-			printOutputTable(0);
+			t = clock() - t; //Print running time!
+			cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
+			printOutputTable(((int)all_solutions.size()) - 1); //Convert to actual index
 			return;
 		}
 		
+		setupPossibleBets();
 		bool limit_reached = false;
 		while (limit_reached == false) {
 			prepDynamicSolution();
@@ -118,6 +121,11 @@ public:
 		cout << endl;
 		const char separator = ' ';
 		printColumnHeaders();
+
+		if (all_solutions.size() == 0) {
+			cout << "Oops! Something got fucked up!" << endl;
+			return;
+		}
 
 		double cumulative_stake = 0.0;
 		double p_win_single_roll = ((double)board_hits / (double)board_size);
@@ -211,9 +219,11 @@ public:
 
 private:
 	vector<vector<double>> all_solutions;
+	unordered_map<int, double> upper_bound_map;
 	vector<double> possible_bets;
 	vector<double> dynamic_solution;
 	vector<double> best_stakes;
+	vector<double> upper_bounds;
 	double best_win_EV_sum;
 	double min_bet;
 	double max_bet;
@@ -244,12 +254,30 @@ private:
 			return;
 		}
 
-		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (profitable) {
-				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
+		//raw_upper_bound = (1 + (1/(payout_factor - 1)))^x
+		//try to fetch upper_bound, otherwise calculate it and store it
+		double upper_bound;
+		auto found_bound = upper_bound_map.find(stake_number);
+		if (found_bound != upper_bound_map.end()) {
+			upper_bound = found_bound->second;
+		}
+		else {
+			upper_bound = pow( (1.0 + (1.0 / (((double)payout_factor) - 1.0))) , (double)stake_number);
+			if (upper_bound > max_bet) {
+				upper_bound = max_bet;
 			}
+			upper_bound_map[stake_number] = upper_bound;
+		}
+		double bet_considered = possible_bets[lastBetAdded];
+		int lastBetAddedCounter = lastBetAdded;
+		while (bet_considered <= upper_bound) {
+			dynamic_solution[stake_number] = bet_considered;
+			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake + bet_considered);
+			if (profitable) {
+				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + bet_considered, lastBetAddedCounter);
+			}
+			++lastBetAddedCounter;
+			bet_considered = possible_bets[lastBetAddedCounter];
 		}
 	}
 
@@ -264,12 +292,31 @@ private:
 			}
 			return;
 		}
-		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitableNoBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
-			if (profitable) {
-				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
+
+		//raw_upper_bound = (1 + (1/(payout_factor - 1)))^x
+		//try to fetch upper_bound, otherwise calculate it and store it
+		double upper_bound;
+		auto found_bound = upper_bound_map.find(stake_number);
+		if (found_bound != upper_bound_map.end()) {
+			upper_bound = found_bound->second;
+		}
+		else {
+			upper_bound = pow((1.0 + (1.0 / (((double)payout_factor) - 1.0))), (double)stake_number);
+			if (upper_bound > max_bet) {
+				upper_bound = max_bet;
 			}
+			upper_bound_map[stake_number] = upper_bound;
+		}
+		double bet_considered = possible_bets[lastBetAdded];
+		int lastBetAddedCounter = lastBetAdded;
+		while (bet_considered <= upper_bound) {
+			dynamic_solution[stake_number] = bet_considered;
+			bool profitable = checkIfProfitableNoBreakEven(dynamic_solution, stake_number, cumulative_stake + bet_considered);
+			if (profitable) {
+				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + bet_considered, lastBetAddedCounter);
+			}
+			++lastBetAddedCounter;
+			bet_considered = possible_bets[lastBetAddedCounter];
 		}
 	}
 

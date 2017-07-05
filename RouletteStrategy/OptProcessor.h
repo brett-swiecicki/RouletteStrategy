@@ -91,7 +91,12 @@ public:
 			prepDynamicSolution();
 			solutionUpdated = false;
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			solutionFindRec(starting_stake, starting_cumulative, 0);
+			if (allowBreakEven) {
+				solutionFindRecBreakEven(starting_stake, starting_cumulative, 0);
+			}
+			else {
+				solutionFindRecNoBreakEven(starting_stake, starting_cumulative, 0);
+			}
 			++total_rolls;
 			if (solutionUpdated == false) {
 				limit_reached = true;
@@ -170,6 +175,10 @@ public:
 		cout << endl;
 	}
 
+	void queryForAdditionalTables() {
+		system("Pause");
+	}
+
 private:
 	vector<double> possible_bets;
 	vector<double> dynamic_solution;
@@ -187,11 +196,11 @@ private:
 	bool solutionUpdated;
 	bool allowBreakEven;
 
-	void solutionFindRec(int stake_number, double cumulative_stake, int lastBetAdded) {
+	void solutionFindRecBreakEven(int stake_number, double cumulative_stake, int lastBetAdded) {
 		if (stake_number == (total_rolls - 1)) {
 			dynamic_solution[stake_number] = max_bet;
 			cumulative_stake += max_bet;
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake);
+			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake);
 			if (profitable) {
 				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
 				if ((dynamic_solution.size() > best_stakes.size()) ||
@@ -206,24 +215,45 @@ private:
 
 		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitable(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
 			if (profitable) {
-				solutionFindRec(stake_number + 1, cumulative_stake + possible_bets[i], i);
+				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
 		}
 	}
 
-	bool checkIfProfitable(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
-		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
-		if (allowBreakEven) {
-			if (profit < 0) {
-				return false;
+	void solutionFindRecNoBreakEven(int stake_number, double cumulative_stake, int lastBetAdded) {
+		if (stake_number == total_rolls) {
+			double dynamic_win_EV_sum = getWinEV(dynamic_solution);
+			if ((dynamic_solution.size() > best_stakes.size()) ||
+				(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
+				best_stakes = dynamic_solution;
+				best_win_EV_sum = dynamic_win_EV_sum;
+				solutionUpdated = true;
+			}
+			return;
+		}
+		for (int i = lastBetAdded; i < (int)possible_bets.size(); ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			bool profitable = checkIfProfitableNoBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+			if (profitable) {
+				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
 		}
-		else {
-			if (profit <= 0) {
-				return false;
-			}
+	}
+
+	bool checkIfProfitableBreakEven(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
+		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
+		if (profit < 0) {
+			return false;
+		}
+		return true;
+	}
+
+	bool checkIfProfitableNoBreakEven(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
+		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
+		if (profit <= 0) {
+			return false;
 		}
 		return true;
 	}

@@ -14,5 +14,5 @@ int main() {
 	myProcessor.getInput();
 	myProcessor.findSolution();
 	myProcessor.printOutputTable();
-	system("Pause");
+	myProcessor.queryForAdditionalTables();
 }

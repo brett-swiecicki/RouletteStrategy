@@ -103,6 +103,9 @@ public:
 			if (solutionUpdated == false) {
 				limit_reached = true;
 			}
+			else {
+				all_solutions.push_back(best_stakes);
+			}
 		}
 		t = clock() - t; //Print running time!
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
@@ -181,28 +184,29 @@ public:
 	}
 
 	void queryForAdditionalTables() {
-		char printMore;
+		
 		int smallest_roll_count = (int)all_solutions.front().size();
 		int largest_roll_count = (int)all_solutions.back().size();
 
-		while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
-			cout << "Would you like to see the output for another solution? Y or N: ";
-			if ((printMore == 'Y') || (printMore == 'y') || (printMore == '1')) {
-				cout << "Enter the number of rolls for which you would like to see a solution: ";
+		cout << "Would you like to see the output for another solution? Y or N: ";
+		char printMore;
+		cin >> printMore;
+		if ((printMore == 'Y') || (printMore == 'y') || (printMore == '1')) {
+			while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
+				cout << "Enter the number of rolls for which you would like to see a solution (" << smallest_roll_count << " through " << largest_roll_count << "): ";
 				int desiredSolution;
 				cin >> desiredSolution;
 				if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
-					int actual_index = (largest_roll_count - desiredSolution);
+					int actual_index = (((int)all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
 					printOutputTable(actual_index);
 				}
 				else {
-					cout << "Sorry! " << desiredSolution << " does not have a computed solution!";
+					cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
 				}
+				cout << "Would you like to see the output for another solution? Y or N: ";
+				cin >> printMore;
 			}
-			else if ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
-				break;
-			}
-		}	
+		}
 	}
 
 private:

@@ -5,12 +5,12 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <unordered_map>
 #include <math.h>
 #include <future>
 #include <thread>
 #include <mutex>
 #include <time.h>
+#include <unordered_map>
 
 using namespace std;
 
@@ -54,6 +54,20 @@ public:
 			cerr << "Incorrect selection was made: " << breakEven << endl;
 			exit(1);
 		}
+		char modeChoice;
+		cout << "Descending Win EV or Maximum Win EV Sum? D or S: ";
+		cin >> modeChoice;
+		if ((modeChoice == 'D') || (modeChoice == 'd') || (modeChoice == '1')) {
+			descendingWinEV = true;
+		}
+		else if ((modeChoice == 'S') || (modeChoice == 's') || (breakEven == '0')) {
+			descendingWinEV = false;
+		}
+		else {
+			cerr << "Incorrect selection was made: " << breakEven << endl;
+			exit(1);
+		}
+
 		/*
 		cout << "std::thread::hardware_concurrency() has determined that your system has access to ";
 		cout << std::thread::hardware_concurrency() << " threads." << endl;
@@ -78,38 +92,16 @@ public:
 	void findSolution() {
 		clock_t t; //Start Clock!
 		t = clock();
-		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
-
-		if (total_rolls == 1) {
-			best_stakes.resize(total_rolls);
-			best_stakes[0] = max_bet;
-			all_solutions.push_back(best_stakes);
-			t = clock() - t; //Print running time!
-			cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
-			printOutputTable(((int)all_solutions.size()) - 1); //Convert to actual index
-			return;
+		setupPossibleBets();
+		
+		
+		if (descendingWinEV == false) {
+			findMaxWinEVSum();
+		}
+		else {
+			findDescendingWinEVSolution();
 		}
 		
-		setupPossibleBets();
-		bool limit_reached = false;
-		while (limit_reached == false) {
-			prepDynamicSolution();
-			solutionUpdated = false;
-			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			if (allowBreakEven) {
-				solutionFindRecBreakEven(starting_stake, starting_cumulative, 0);
-			}
-			else {
-				solutionFindRecNoBreakEven(starting_stake, starting_cumulative, 0);
-			}
-			++total_rolls;
-			if (solutionUpdated == false) {
-				limit_reached = true;
-			}
-			else {
-				all_solutions.push_back(best_stakes);
-			}
-		}
 		t = clock() - t; //Print running time!
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
 		printOutputTable(((int)all_solutions.size()) - 1); //Convert to actual index
@@ -121,11 +113,6 @@ public:
 		cout << endl;
 		const char separator = ' ';
 		printColumnHeaders();
-
-		if (all_solutions.size() == 0) {
-			cout << "Oops! Something got fucked up!" << endl;
-			return;
-		}
 
 		double cumulative_stake = 0.0;
 		double p_win_single_roll = ((double)board_hits / (double)board_size);
@@ -192,11 +179,11 @@ public:
 	}
 
 	void queryForAdditionalTables() {
-		
+
 		int smallest_roll_count = (int)all_solutions.front().size();
 		int largest_roll_count = (int)all_solutions.back().size();
 
-		cout << "Would you like to see the output for another solution? Y or N: ";
+		cout << "Would you like to see the output for another solution? [DATA MAY BE INVALID!] Y or N: ";
 		char printMore;
 		cin >> printMore;
 		if ((printMore == 'Y') || (printMore == 'y') || (printMore == '1')) {
@@ -219,11 +206,13 @@ public:
 
 private:
 	vector<vector<double>> all_solutions;
-	unordered_map<int, double> upper_bound_map;
+	unordered_map<double, int> bets_to_indices;
 	vector<double> possible_bets;
 	vector<double> dynamic_solution;
+	vector<double> dynamic_EV_solution;
 	vector<double> best_stakes;
-	vector<double> upper_bounds;
+	vector<int> upper_bound_bets; //Inclusive
+	string mode;
 	double best_win_EV_sum;
 	double min_bet;
 	double max_bet;
@@ -236,6 +225,67 @@ private:
 	int total_rolls;
 	bool solutionUpdated;
 	bool allowBreakEven;
+	bool descendingWinEV;
+
+	void findMaxWinEVSum() {
+		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
+		if (total_rolls == 1) {
+			best_stakes.resize(total_rolls);
+			best_stakes[0] = max_bet;
+			all_solutions.push_back(best_stakes);
+			printOutputTable(0);
+			return;
+		}
+		constructUpperBounds();
+		bool limit_reached = false;
+		mode = "Phase1";
+		while (limit_reached == false) {
+			prepDynamicSolution();
+			solutionUpdated = false;
+			cout << "Currently computing strategies for " << total_rolls << " rolls.";
+			if (allowBreakEven) {
+				solutionFindRecBreakEven(starting_stake, starting_cumulative, 0);
+			}
+			else {
+				solutionFindRecNoBreakEven(starting_stake, starting_cumulative, 0);
+			}
+			++total_rolls;
+			if (solutionUpdated == false) {
+				if (mode == "Phase2") {
+					limit_reached = true;
+				}
+				cout << endl;
+			}
+			else {
+				all_solutions.push_back(best_stakes);
+				appendUpperBounds();
+				if (mode == "Phase1") {
+					mode = "Phase2";
+				}
+				cout << " Solution found!" << endl;
+			}
+		}
+	}
+
+	void findDescendingWinEVSolution() {
+		/*
+		Invariants:
+			The WinEV for each roll needs to be less than the WinEV for the previous roll
+			Still would like to maximize the number of rolls
+			Recursive solution
+			Start at max bet, and go down while win EV is greater than previous winEV
+			So you could have dynamic_win EV that matches up
+			Save the solution that has the max number of rolls
+			Loop breaks when winEV is lower than prev
+			Base case is when the last bet added as a max bet
+		*/
+		total_rolls = 1;
+
+	}
+
+	void solutionFindDescendingWinEV() {
+
+	}
 
 	void solutionFindRecBreakEven(int stake_number, double cumulative_stake, int lastBetAdded) {
 		if (stake_number == (total_rolls - 1)) {
@@ -254,33 +304,12 @@ private:
 			return;
 		}
 
-		//raw_upper_bound = (1 + (1/(payout_factor - 1)))^x
-		//try to fetch upper_bound, otherwise calculate it and store it
-		double upper_bound;
-		auto found_bound = upper_bound_map.find(stake_number);
-		if (found_bound != upper_bound_map.end()) {
-			upper_bound = found_bound->second;
-		}
-		else {
-			upper_bound = pow( (1.0 + (1.0 / (((double)payout_factor) - 1.0))) , (double)stake_number);
-			if (upper_bound > max_bet) {
-				upper_bound = max_bet;
-			}
-			upper_bound_map[stake_number] = upper_bound;
-		}
-		double bet_considered = possible_bets[lastBetAdded];
-		int lastBetAddedCounter = lastBetAdded;
-		while (bet_considered <= upper_bound) {
-			dynamic_solution[stake_number] = bet_considered;
-			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake + bet_considered);
+		for (int i = lastBetAdded; i <= upper_bound_bets[stake_number]; ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
 			if (profitable) {
-				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + bet_considered, lastBetAddedCounter);
+				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
-			++lastBetAddedCounter;
-			if (lastBetAddedCounter == (int)possible_bets.size()) {
-				break;
-			}
-			bet_considered = possible_bets[lastBetAddedCounter];
 		}
 	}
 
@@ -295,34 +324,12 @@ private:
 			}
 			return;
 		}
-
-		//raw_upper_bound = (1 + (1/(payout_factor - 1)))^x
-		//try to fetch upper_bound, otherwise calculate it and store it
-		double upper_bound;
-		auto found_bound = upper_bound_map.find(stake_number);
-		if (found_bound != upper_bound_map.end()) {
-			upper_bound = found_bound->second;
-		}
-		else {
-			upper_bound = pow((1.0 + (1.0 / (((double)payout_factor) - 1.0))), (double)stake_number);
-			if (upper_bound > max_bet) {
-				upper_bound = max_bet;
-			}
-			upper_bound_map[stake_number] = upper_bound;
-		}
-		double bet_considered = possible_bets[lastBetAdded];
-		int lastBetAddedCounter = lastBetAdded;
-		while (bet_considered <= upper_bound) {
-			dynamic_solution[stake_number] = bet_considered;
-			bool profitable = checkIfProfitableNoBreakEven(dynamic_solution, stake_number, cumulative_stake + bet_considered);
+		for (int i = lastBetAdded; i <= upper_bound_bets[stake_number]; ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			bool profitable = checkIfProfitableNoBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
 			if (profitable) {
-				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + bet_considered, lastBetAddedCounter);
+				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
-			++lastBetAddedCounter;
-			if (lastBetAddedCounter == (int)possible_bets.size()) {
-				break;
-			}
-			bet_considered = possible_bets[lastBetAddedCounter];
 		}
 	}
 
@@ -400,9 +407,12 @@ private:
 
 	void setupPossibleBets() {
 		double insertBet = min_bet;
+		int index = 0;
 		while (insertBet <= max_bet) {
 			possible_bets.push_back(insertBet);
+			bets_to_indices[insertBet] = index;
 			insertBet += min_increment;
+			++index;
 		}
 	}
 
@@ -431,6 +441,51 @@ private:
 			starting_stake = 1;
 			dynamic_solution[0] = min_bet;
 			starting_cumulative += min_bet;
+		}
+	}
+
+	void constructUpperBounds() {
+		upper_bound_bets.resize(total_rolls);
+		for (int i = 0; i < total_rolls; ++i) {
+			double raw_upper_bound = pow((1.0 + (1.0/(double)payout_factor)), i); //Calculate raw y = (1 + (1/payout_factor))^x
+			double rounded_upper_bound = roundUp(raw_upper_bound);
+			if ((rounded_upper_bound >= min_bet) && (rounded_upper_bound <= max_bet)) {
+				int index = bets_to_indices[rounded_upper_bound];
+				upper_bound_bets[i] = index;
+			}
+			else if (rounded_upper_bound > max_bet) { //Set to max_bet
+				upper_bound_bets[i] = (((int)possible_bets.size()) - 1);
+			}
+			else { //Set to min_bet
+				upper_bound_bets[i] = 0;
+			}
+		}
+	}
+
+	void appendUpperBounds() {
+		if (upper_bound_bets[total_rolls - 2] == (((int)possible_bets.size()) - 1)) {
+			upper_bound_bets.push_back(((int)possible_bets.size()) - 1); //The last upper bound bet should usually be the max_bet
+		}
+		else {
+			double raw_upper_bound = pow((1.0 + (1.0 / (double)payout_factor)), (double)upper_bound_bets.size()); //Calculate raw y = (1 + (1/payout_factor))^x
+			double rounded_upper_bound = roundUp(raw_upper_bound);
+			if (rounded_upper_bound > max_bet) {
+				upper_bound_bets.push_back(((int)possible_bets.size()) - 1);
+			}
+			else {
+				int index = bets_to_indices[rounded_upper_bound];
+				upper_bound_bets.push_back(index);
+			}
+		}
+	}
+
+	double roundUp(double num_to_round) {
+		double remainder = fmod(num_to_round, min_increment);
+		if (remainder != 0.0) {
+			return (num_to_round + min_increment - remainder);
+		}
+		else {
+			return num_to_round;
 		}
 	}
 

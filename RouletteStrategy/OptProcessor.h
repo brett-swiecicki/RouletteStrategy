@@ -93,15 +93,12 @@ public:
 		clock_t t; //Start Clock!
 		t = clock();
 		setupPossibleBets();
-		
-		
 		if (descendingWinEV == false) {
 			findMaxWinEVSum();
 		}
 		else {
 			findDescendingWinEVSolution();
 		}
-		
 		t = clock() - t; //Print running time!
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
 		printOutputTable(((int)all_solutions.size()) - 1); //Convert to actual index
@@ -211,6 +208,7 @@ private:
 	vector<double> dynamic_solution;
 	vector<double> dynamic_EV_solution;
 	vector<double> best_stakes;
+	vector<double> p_win_exacts;
 	vector<int> upper_bound_bets; //Inclusive
 	string mode;
 	double best_win_EV_sum;
@@ -218,6 +216,8 @@ private:
 	double max_bet;
 	double min_increment;
 	double starting_cumulative;
+	double dynamic_profit;
+	double p_win_single = ((double)board_hits / (double)board_size);
 	int starting_stake;
 	int payout_factor;
 	int board_hits;
@@ -268,22 +268,54 @@ private:
 	}
 
 	void findDescendingWinEVSolution() {
+		total_rolls = 2;
+		construct_p_win_exacts();
+		bool limit_reached = false;
+		while (limit_reached == false) {
+			solutionUpdated = false;
+			cout << "Currently computing strategies for " << total_rolls << " rolls.";
+			dynamic_solution.resize(total_rolls);
+			dynamic_EV_solution.resize(total_rolls);
+			dynamic_solution[0] = possible_bets[0];
+			dynamic_EV_solution[0] = singleRollEV(0, 0, possible_bets[0]);
+
+			if (allowBreakEven) {
+				solutionFindDescendingWinEV(1, possible_bets[0]);
+			}
+			else {
+				solutionFindDescendingWinEV_noBreakEvens();
+			}
+			++total_rolls;
+			append_p_win_exacts();
+			if (solutionUpdated == true) {
+				limit_reached = true;
+			}
+			else {
+				all_solutions.push_back(best_stakes);
+			}
+		}
+	}
+
+	void solutionFindDescendingWinEV(int stake_number, double cumulative_stake) {
 		/*
 		Invariants:
-			The WinEV for each roll needs to be less than the WinEV for the previous roll
-			Still would like to maximize the number of rolls
-			Recursive solution
-			Start at max bet, and go down while win EV is greater than previous winEV
-			So you could have dynamic_win EV that matches up
-			Save the solution that has the max number of rolls
-			Loop breaks when winEV is lower than prev
-			Base case is when the last bet added as a max bet
+		The WinEV for each roll needs to be less than the WinEV for the previous roll
+		Still would like to maximize the number of rolls
+		Recursive solution
+		Start at max bet, and go down while win EV is greater than previous winEV
+		So you could have dynamic_win EV that matches up
+		Save the solution that has the max number of rolls
+		Loop breaks when winEV is lower than prev
+		Base case is when the last bet added as a max bet
 		*/
-		total_rolls = 1;
+		if (stake_number == total_rolls) {
+			//Hit a solution! See if better than current.
+			//Either size is better, or one of the earlier rolls has a higher EV
+		}
 
 	}
 
-	void solutionFindDescendingWinEV() {
+	void solutionFindDescendingWinEV_noBreakEvens() {
 
 	}
 
@@ -361,7 +393,6 @@ private:
 		for (int i = 0; i < (int)stakes_in.size(); ++i) {
 			cumulative_stake += stakes_in[i];
 			double profit = (((payout_factor + 1) * stakes_in[i]) - cumulative_stake);
-
 			if (i != 0) {
 				p_win_exact_roll = p_win_single_roll * p_loss_prev;
 				p_loss_prev = p_loss_prev * p_loss_single_roll;
@@ -489,6 +520,24 @@ private:
 		}
 	}
 
+	double singleRollEV(int stake_number, double cumulative_stake, double bet_in) {
+		double profit = (((payout_factor + 1) * bet_in) - cumulative_stake - bet_in);
+		return (p_win_exacts[stake_number] * profit);
+	}
+
+	void construct_p_win_exacts() {
+		p_win_exacts.resize(total_rolls);
+		p_win_exacts[0] = p_win_single;
+		for (int i = 1; i < (int)p_win_exacts.size(); ++i) {
+			double p_loss_on_prior = pow((double)(1.0 - p_win_single), (double)i);
+			p_win_exacts[i] = (p_loss_on_prior * p_win_single);
+		}
+	}
+
+	void append_p_win_exacts() {
+		double p_loss_on_prior = pow((double)(1.0 - p_win_single), (double)p_win_exacts.size());
+		p_win_exacts.push_back(p_loss_on_prior * p_win_single);
+	}
 };
 
 #endif

@@ -208,6 +208,7 @@ private:
 	vector<double> dynamic_solution;
 	vector<double> dynamic_EV_solution;
 	vector<double> best_stakes;
+	vector<double> best_stakes_EV;
 	vector<double> p_win_exacts;
 	vector<int> upper_bound_bets; //Inclusive
 	string mode;
@@ -278,12 +279,11 @@ private:
 			dynamic_EV_solution.resize(total_rolls);
 			dynamic_solution[0] = possible_bets[0];
 			dynamic_EV_solution[0] = singleRollEV(0, 0, possible_bets[0]);
-
 			if (allowBreakEven) {
-				solutionFindDescendingWinEV(1, possible_bets[0]);
+				solutionFindDescendingWinEV(1, possible_bets[0], 0);
 			}
 			else {
-				solutionFindDescendingWinEV_noBreakEvens();
+				solutionFindDescendingWinEV_noBreakEvens(1, possible_bets[0], 0);
 			}
 			++total_rolls;
 			append_p_win_exacts();
@@ -296,27 +296,60 @@ private:
 		}
 	}
 
-	void solutionFindDescendingWinEV(int stake_number, double cumulative_stake) {
-		/*
-		Invariants:
-		The WinEV for each roll needs to be less than the WinEV for the previous roll
-		Still would like to maximize the number of rolls
-		Recursive solution
-		Start at max bet, and go down while win EV is greater than previous winEV
-		So you could have dynamic_win EV that matches up
-		Save the solution that has the max number of rolls
-		Loop breaks when winEV is lower than prev
-		Base case is when the last bet added as a max bet
-		*/
+	void solutionFindDescendingWinEV(int stake_number, double cumulative_stake, int lastAddedBet) {
 		if (stake_number == total_rolls) {
-			//Hit a solution! See if better than current.
-			//Either size is better, or one of the earlier rolls has a higher EV
+			if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
+				best_stakes = dynamic_solution;
+				best_stakes_EV = dynamic_EV_solution;
+			}
+			else { //Same number of rolls -> //Check EV one by one
+				for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
+					if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
+						best_stakes = dynamic_solution;
+						best_stakes_EV = dynamic_EV_solution;
+						break;
+					}
+				}
+			}
 		}
-
+		for (int i = lastAddedBet; i < (int)possible_bets.size(); ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, possible_bets[i]);
+			if ((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] >= 0.0)) {
+				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + possible_bets[i], i);
+			}
+			else if (dynamic_EV_solution[stake_number] > dynamic_EV_solution[stake_number - 1]) {
+				break; //This makes it so EV is descending
+			}
+		}
 	}
 
-	void solutionFindDescendingWinEV_noBreakEvens() {
-
+	void solutionFindDescendingWinEV_noBreakEvens(int stake_number, double cumulative_stake, int lastAddedBet) {
+		if (stake_number == total_rolls) {
+			if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
+				best_stakes = dynamic_solution;
+				best_stakes_EV = dynamic_EV_solution;
+			}
+			else { //Same number of rolls -> //Check EV one by one
+				for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
+					if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
+						best_stakes = dynamic_solution;
+						best_stakes_EV = dynamic_EV_solution;
+						break;
+					}
+				}
+			}
+		}
+		for (int i = lastAddedBet; i < (int)possible_bets.size(); ++i) {
+			dynamic_solution[stake_number] = possible_bets[i];
+			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, possible_bets[i]);
+			if ((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] > 0.0)) {
+				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + possible_bets[i], i);
+			}
+			else if (dynamic_EV_solution[stake_number] > dynamic_EV_solution[stake_number - 1]) {
+				break; //This makes it so EV is descending
+			}
+		}
 	}
 
 	void solutionFindRecBreakEven(int stake_number, double cumulative_stake, int lastBetAdded) {

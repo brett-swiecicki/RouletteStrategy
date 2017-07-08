@@ -278,11 +278,8 @@ private:
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
 			dynamic_solution.resize(total_rolls);
 			dynamic_EV_solution.resize(total_rolls);
-			dynamic_solution[0] = possible_bets[0];
-			dynamic_EV_solution[0] = singleRollEV(0, 0, possible_bets[0]);
-			solutionFindDescendingWinEV(1, possible_bets[0], 0);
+			solutionFindDescendingWinEV(0, 0.0, 0);
 			++total_rolls;
-			append_p_win_exacts();
 			if (solutionUpdated == false) {
 				limit_reached = true;
 				if (total_rolls == 3) {
@@ -293,6 +290,7 @@ private:
 			}
 			else {
 				all_solutions.push_back(best_stakes);
+				append_p_win_exacts();
 			}
 		}
 	}
@@ -320,8 +318,7 @@ private:
 		for (int i = lastAddedBet; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
 			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, possible_bets[i]);
-			if (((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] >= 0.0)) 
-			|| (stake_number == 1)){
+			if ((stake_number == 0) ||((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] >= 0.0))){
 				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
 			else if (dynamic_EV_solution[stake_number] > dynamic_EV_solution[stake_number - 1]) {

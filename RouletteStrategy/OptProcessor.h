@@ -41,30 +41,30 @@ public:
 		cin >> payout_factor;
 		cout << "Enter the number of winning table positions: ";
 		cin >> board_hits;
-		cout << "Are break even bets acceptable? Y or N: ";
-		char breakEven;
-		cin >> breakEven;
-		if ((breakEven == 'Y') || (breakEven == 'y') || (breakEven == '1')) {
-			allowBreakEven = true;
-		}
-		else if ((breakEven == 'N') || (breakEven == 'n') || (breakEven == '0')) {
-			allowBreakEven = false;
-		}
-		else {
-			cerr << "Incorrect selection was made: " << breakEven << endl;
-			exit(1);
-		}
 		char modeChoice;
 		cout << "Descending Win EV or Maximum Win EV Sum? D or S: ";
 		cin >> modeChoice;
 		if ((modeChoice == 'D') || (modeChoice == 'd') || (modeChoice == '1')) {
 			descendingWinEV = true;
 		}
-		else if ((modeChoice == 'S') || (modeChoice == 's') || (breakEven == '0')) {
+		else if ((modeChoice == 'S') || (modeChoice == 's') || (modeChoice == '0')) {
 			descendingWinEV = false;
+			cout << "Are break even bets acceptable? Y or N: ";
+			char breakEven;
+			cin >> breakEven;
+			if ((breakEven == 'Y') || (breakEven == 'y') || (breakEven == '1')) {
+				allowBreakEven = true;
+			}
+			else if ((breakEven == 'N') || (breakEven == 'n') || (breakEven == '0')) {
+				allowBreakEven = false;
+			}
+			else {
+				cerr << "Incorrect selection was made: " << breakEven << endl;
+				exit(1);
+			}
 		}
 		else {
-			cerr << "Incorrect selection was made: " << breakEven << endl;
+			cerr << "Incorrect selection was made: " << modeChoice << endl;
 			exit(1);
 		}
 
@@ -119,7 +119,7 @@ public:
 		double p_lose_on_final = 0;
 		double loss_EV = 0;
 		double p_win_exact;
-		vector<double>& desired_solution = all_solutions[index_to_print];
+		vector<double>& desired_solution = all_solutions[index_to_print]; //awwwww_sheetit
 		double desired_win_EV_sum = getWinEV(desired_solution);
 
 		for (int i = 0; i < (int)desired_solution.size(); ++i) {
@@ -218,7 +218,7 @@ private:
 	double min_increment;
 	double starting_cumulative;
 	double dynamic_profit;
-	double p_win_single = ((double)board_hits / (double)board_size);
+	double p_win_single;
 	int starting_stake;
 	int payout_factor;
 	int board_hits;
@@ -270,25 +270,26 @@ private:
 
 	void findDescendingWinEVSolution() {
 		total_rolls = 2;
+		p_win_single = ((double)board_hits / (double)board_size);
 		construct_p_win_exacts();
 		bool limit_reached = false;
 		while (limit_reached == false) {
 			solutionUpdated = false;
-			cout << "Currently computing strategies for " << total_rolls << " rolls.";
+			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
 			dynamic_solution.resize(total_rolls);
 			dynamic_EV_solution.resize(total_rolls);
 			dynamic_solution[0] = possible_bets[0];
 			dynamic_EV_solution[0] = singleRollEV(0, 0, possible_bets[0]);
-			if (allowBreakEven) {
-				solutionFindDescendingWinEV(1, possible_bets[0], 0);
-			}
-			else {
-				solutionFindDescendingWinEV_noBreakEvens(1, possible_bets[0], 0);
-			}
+			solutionFindDescendingWinEV(1, possible_bets[0], 0);
 			++total_rolls;
 			append_p_win_exacts();
-			if (solutionUpdated == true) {
+			if (solutionUpdated == false) {
 				limit_reached = true;
+				if (total_rolls == 3) {
+					best_stakes.resize(1);
+					best_stakes[0] = possible_bets[possible_bets.size() - 1];
+					all_solutions.push_back(best_stakes);
+				}
 			}
 			else {
 				all_solutions.push_back(best_stakes);
@@ -297,53 +298,30 @@ private:
 	}
 
 	void solutionFindDescendingWinEV(int stake_number, double cumulative_stake, int lastAddedBet) {
+		//New invariant: bets at the end can be break even, but others can't
 		if (stake_number == total_rolls) {
 			if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
 				best_stakes = dynamic_solution;
 				best_stakes_EV = dynamic_EV_solution;
+				solutionUpdated = true;
 			}
 			else { //Same number of rolls -> //Check EV one by one
 				for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
 					if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
 						best_stakes = dynamic_solution;
 						best_stakes_EV = dynamic_EV_solution;
+						solutionUpdated = true;
 						break;
 					}
 				}
 			}
+			return;
 		}
 		for (int i = lastAddedBet; i < (int)possible_bets.size(); ++i) {
 			dynamic_solution[stake_number] = possible_bets[i];
 			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, possible_bets[i]);
-			if ((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] >= 0.0)) {
-				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + possible_bets[i], i);
-			}
-			else if (dynamic_EV_solution[stake_number] > dynamic_EV_solution[stake_number - 1]) {
-				break; //This makes it so EV is descending
-			}
-		}
-	}
-
-	void solutionFindDescendingWinEV_noBreakEvens(int stake_number, double cumulative_stake, int lastAddedBet) {
-		if (stake_number == total_rolls) {
-			if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
-				best_stakes = dynamic_solution;
-				best_stakes_EV = dynamic_EV_solution;
-			}
-			else { //Same number of rolls -> //Check EV one by one
-				for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
-					if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
-						best_stakes = dynamic_solution;
-						best_stakes_EV = dynamic_EV_solution;
-						break;
-					}
-				}
-			}
-		}
-		for (int i = lastAddedBet; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, possible_bets[i]);
-			if ((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] > 0.0)) {
+			if (((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] >= 0.0)) 
+			|| (stake_number == 1)){
 				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + possible_bets[i], i);
 			}
 			else if (dynamic_EV_solution[stake_number] > dynamic_EV_solution[stake_number - 1]) {
@@ -559,6 +537,7 @@ private:
 	}
 
 	void construct_p_win_exacts() {
+		//This function is fucked!!!
 		p_win_exacts.resize(total_rolls);
 		p_win_exacts[0] = p_win_single;
 		for (int i = 1; i < (int)p_win_exacts.size(); ++i) {

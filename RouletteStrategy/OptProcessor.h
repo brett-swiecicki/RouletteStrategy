@@ -180,7 +180,7 @@ public:
 		int smallest_roll_count = (int)all_solutions.front().size();
 		int largest_roll_count = (int)all_solutions.back().size();
 
-		cout << "Would you like to see the output for another solution? [DATA MAY BE INVALID!] Y or N: ";
+		cout << "Would you like to see the output for another solution? [DATA MAY NOT BE OPTIMAL!] Y or N: ";
 		char printMore;
 		cin >> printMore;
 		if ((printMore == 'Y') || (printMore == 'y') || (printMore == '1')) {
@@ -269,28 +269,38 @@ private:
 	}
 
 	void findDescendingWinEVSolution() {
-		total_rolls = 2;
+		total_rolls = (getLowestBoundRolls() - payout_factor); //Really not a lowestBound in this case, just an approximation
 		p_win_single = ((double)board_hits / (double)board_size);
 		construct_p_win_exacts();
 		bool limit_reached = false;
+		bool decreasing = false;
 		while (limit_reached == false) {
 			solutionUpdated = false;
 			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
 			dynamic_solution.resize(total_rolls);
 			dynamic_EV_solution.resize(total_rolls);
 			solutionFindDescendingWinEV(0, 0.0, 0);
-			++total_rolls;
 			if (solutionUpdated == false) {
-				limit_reached = true;
-				if (total_rolls == 3) {
+				if (total_rolls == 2) { //If there can only be one bet then it must be table max
 					best_stakes.resize(1);
 					best_stakes[0] = possible_bets[possible_bets.size() - 1];
 					all_solutions.push_back(best_stakes);
+				}
+				if (all_solutions.empty()) {
+					--total_rolls;
+					decreasing = true;
+				}
+				else {
+					limit_reached = true;
 				}
 			}
 			else {
 				all_solutions.push_back(best_stakes);
 				append_p_win_exacts();
+				++total_rolls;
+				if (decreasing) {
+					limit_reached = true;
+				}
 			}
 		}
 	}
@@ -452,6 +462,10 @@ private:
 			bets_to_indices[insertBet] = index;
 			insertBet += min_increment;
 			++index;
+		}
+		if (possible_bets.back() != max_bet) {
+			possible_bets.push_back(max_bet);
+			bets_to_indices[max_bet] = index;
 		}
 	}
 

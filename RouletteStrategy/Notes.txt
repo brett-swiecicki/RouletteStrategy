@@ -1,3 +1,4 @@
-Ideas for increasing speed:
-Hash table
-Top down dynamic programming
+Multithreading? (Branch and bound, factorial, permuatations.)
+Supplemental rolls? New table...
+Finish the simulator
+Bound the descending winEV

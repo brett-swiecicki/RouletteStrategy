@@ -15,7 +15,7 @@ public:
 
 	Simulator() { //Default constructor gets all input from user
 		updateParameters();
-		cout << "Enter the total amount of simulations you would like: ";
+		cout << "Please enter the total number of simulations you would like to run: ";
 		cin >> total_sims;
 	}
 
@@ -23,6 +23,7 @@ public:
 		strat_stakes = strat_stakes_in;
 		total_rolls = total_rolls_in;
 		board_size = board_size_in;
+		board_hits = board_hits_in;
 		payout_factor = payout_factor_in;
 		cout << "Please enter the total number of simulations you would like to run: ";
 		cin >> total_sims;
@@ -40,7 +41,7 @@ public:
 	}
 
 	void query_for_additional_simulations() {
-		char decision;
+		char decision = 'Y';
 		while ((decision != 'N') && (decision != 'n') && (decision != '0')) {
 			cout << "Would you like to run more simulations? Y or N: ";
 			cin >> decision;
@@ -56,13 +57,14 @@ public:
 				runSimulations();
 			}
 		}
+		cout << endl;
 	}
 
 	void updateParameters() {
 		cout << "Enter how many roles your strategy can have before breaking: ";
 		cin >> total_rolls;
 		strat_stakes.resize(total_rolls);
-		cout << "Please enter each bet in order starting with the first: ";
+		cout << "Please enter each bet in order starting with the first: " << endl;
 		double input_bet;
 		for (int i = 0; i < total_rolls; ++i) {
 			cin >> input_bet;
@@ -108,7 +110,7 @@ private:
 		double bet;
 		int sim_count = 0;
 		while (sim_count < total_sims) {
-			dynamic_bankroll = 0.0;
+			dynamic_bankroll = bankroll; //reset the bankroll amount to run the whole strats
 			int roll_on_strat = 0;
 			while ((dynamic_bankroll > 0.0) && (dynamic_bankroll < (bankroll * 2))) {
 				int random_num = (rand() % board_size); // random_num in the range 0 to E 37 or A 38
@@ -121,7 +123,7 @@ private:
 					dynamic_bankroll -= bet;
 				}
 				if (random_num < board_hits) { //HIT!
-					dynamic_bankroll += (payout_factor * bet);
+					dynamic_bankroll += ((payout_factor + 1) * bet);
 					roll_on_strat = 0;
 				}
 				else { //MISS!
@@ -132,12 +134,11 @@ private:
 					}
 				}
 			} //End of inner while loop (actual simulations)
-
 			if (dynamic_bankroll <= 0.0) {
 				++num_losses;
 			}
 			else {
-				++num_losses;
+				++num_wins;
 			}
 			++sim_count;
 		}

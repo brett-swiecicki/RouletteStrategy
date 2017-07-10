@@ -180,16 +180,16 @@ public:
 	void queryForAdditionalTasks() {
 		char taskMode;
 		cout << "Please select what you would like to do next: " << endl;
-		cout << "1. See the output table for another solution [DATA MAY NOT BE OPTIMAL!] " << endl;
-		cout << "2. Run simulations on the produced solution. " << endl;
-		cout << "3. Supplement this solution with an optimal solution from another table. " << endl;
+		cout << "1: See the output table for another solution [DATA MAY NOT BE OPTIMAL!] " << endl;
+		cout << "2: Run simulations on the produced solution. " << endl;
+		cout << "3: Supplement this solution with an optimal solution from another table. " << endl;
 		cout << "Q: Quit program." << endl;
 		cin >> taskMode;
-		if (taskMode == 1) {
+		if (taskMode == '1') {
 			queryForAdditionalTables();
 			queryForAdditionalTasks();
 		}
-		else if (taskMode == 2) {
+		else if (taskMode == '2') {
 			Simulator mySimulator = Simulator(all_solutions.back(), (int)all_solutions.back().size(), board_size, board_hits, payout_factor);
 			mySimulator.runSimulations();
 			mySimulator.query_for_additional_simulations();
@@ -330,19 +330,24 @@ private:
 
 	void solutionFindDescendingWinEV(int stake_number, double cumulative_stake, int lastAddedBet) {
 		//New invariant: bets at the end can be break even, but others can't
-		if (stake_number == total_rolls) {
-			if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
-				best_stakes = dynamic_solution;
-				best_stakes_EV = dynamic_EV_solution;
-				solutionUpdated = true;
-			}
-			else { //Same number of rolls -> //Check EV one by one
-				for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
-					if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
-						best_stakes = dynamic_solution;
-						best_stakes_EV = dynamic_EV_solution;
-						solutionUpdated = true;
-						break;
+		if (stake_number == (total_rolls - 1)) {
+			//First, need to fix the last bet as the table max:
+			dynamic_solution[stake_number] = max_bet;
+			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, max_bet);
+			if (dynamic_EV_solution[stake_number] >= 0.0) {
+				if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
+					best_stakes = dynamic_solution;
+					best_stakes_EV = dynamic_EV_solution;
+					solutionUpdated = true;
+				}
+				else { //Same number of rolls -> //Check EV one by one
+					for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
+						if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
+							best_stakes = dynamic_solution;
+							best_stakes_EV = dynamic_EV_solution;
+							solutionUpdated = true;
+							break;
+						}
 					}
 				}
 			}

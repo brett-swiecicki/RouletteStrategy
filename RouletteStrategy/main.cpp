@@ -15,8 +15,8 @@ using namespace std;
 int main() {
 	cout << "The Swiecicki Roulette Strategy Program." << endl;
 	cout << "Please select a mode: " << endl;
-	cout << "1. Compute a new optimal strategy." << endl;
-	cout << "2. Run simulations on an existing strategy." << endl;
+	cout << "1: Compute a new optimal strategy." << endl;
+	cout << "2: Run simulations on an existing strategy." << endl;
 	int mode;
 	cin >> mode;
 	if (mode == 1) {

@@ -1,4 +1,3 @@
-Multithreading? (Branch and bound, factorial, permuatations.)
+Multithreading? Descending Win EV could be multithreaded from the first level
 Supplemental rolls? New table...
-Finish the simulator
-Bound the descending winEV
+Finish the simulator (TODO)

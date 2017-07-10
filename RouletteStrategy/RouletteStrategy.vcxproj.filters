@@ -42,5 +42,8 @@
     <ClInclude Include="OptProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Simulator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -12,6 +12,8 @@
 #include <time.h>
 #include <unordered_map>
 
+#include "Simulator.h"
+
 using namespace std;
 
 class OptimalSolutionProcessor {
@@ -175,29 +177,50 @@ public:
 		cout << endl;
 	}
 
-	void queryForAdditionalTables() {
+	void queryForAdditionalTasks() {
+		char taskMode;
+		cout << "Please select what you would like to do next: " << endl;
+		cout << "1. See the output table for another solution [DATA MAY NOT BE OPTIMAL!] " << endl;
+		cout << "2. Run simulations on the produced solution. " << endl;
+		cout << "3. Supplement this solution with an optimal solution from another table. " << endl;
+		cout << "Q: Quit program." << endl;
+		cin >> taskMode;
+		if (taskMode == 1) {
+			queryForAdditionalTables();
+			queryForAdditionalTasks();
+		}
+		else if (taskMode == 2) {
+			Simulator mySimulator = Simulator(all_solutions.back(), (int)all_solutions.back().size(), board_size, board_hits, payout_factor);
+			mySimulator.runSimulations();
+			mySimulator.query_for_additional_simulations();
+			queryForAdditionalTasks();
+		}
+		else if ((taskMode == 'Q') || (taskMode == 'q')){
+			return;
+		}
+		else {
+			cout << "Sorry! That mode is not available at this time." << endl;
+			queryForAdditionalTasks();
+		}
+	}
 
+	void queryForAdditionalTables() {
 		int smallest_roll_count = (int)all_solutions.front().size();
 		int largest_roll_count = (int)all_solutions.back().size();
-
-		cout << "Would you like to see the output for another solution? [DATA MAY NOT BE OPTIMAL!] Y or N: ";
-		char printMore;
-		cin >> printMore;
-		if ((printMore == 'Y') || (printMore == 'y') || (printMore == '1')) {
-			while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
-				cout << "Enter the number of rolls for which you would like to see a solution (" << smallest_roll_count << " through " << largest_roll_count << "): ";
-				int desiredSolution;
-				cin >> desiredSolution;
-				if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
-					int actual_index = (((int)all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
-					printOutputTable(actual_index);
-				}
-				else {
-					cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
-				}
-				cout << "Would you like to see the output for another solution? Y or N: ";
-				cin >> printMore;
+		char printMore = 'Y';
+		while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
+			cout << "Enter the number of rolls for which you would like to see a solution (" << smallest_roll_count << " through " << largest_roll_count << "): ";
+			int desiredSolution;
+			cin >> desiredSolution;
+			if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
+				int actual_index = (((int)all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
+				printOutputTable(actual_index);
 			}
+			else {
+				cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
+			}
+			cout << "Would you like to see the output for another solution? Y or N: ";
+			cin >> printMore;
 		}
 	}
 

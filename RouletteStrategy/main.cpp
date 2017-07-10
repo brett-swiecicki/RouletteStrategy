@@ -9,12 +9,29 @@
 #include <iostream>
 #include <string>
 #include "OptProcessor.h"
+#include "Simulator.h"
 using namespace std;
 
 int main() {
-	cout << "Optimal Roulette Strategy Finder." << endl;
-	OptimalSolutionProcessor myProcessor;
-	myProcessor.getInput();
-	myProcessor.findSolution();
-	myProcessor.queryForAdditionalTables();
+	cout << "The Swiecicki Roulette Strategy Program." << endl;
+	cout << "Please select a mode: " << endl;
+	cout << "1. Compute a new optimal strategy." << endl;
+	cout << "2. Run simulations on an existing strategy." << endl;
+	int mode;
+	cin >> mode;
+	if (mode == 1) {
+		OptimalSolutionProcessor myProcessor;
+		myProcessor.getInput();
+		myProcessor.findSolution();
+		myProcessor.queryForAdditionalTasks();
+	}
+	else if (mode == 2) {
+		Simulator mySimulator;
+		mySimulator.runSimulations();
+		mySimulator.query_for_additional_simulations();
+	}
+	else {
+		cerr << "Incorrect selection was made: " << mode << endl;
+		exit(1);
+	}
 }

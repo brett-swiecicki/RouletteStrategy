@@ -116,7 +116,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OptProcessor.h" />
+    <ClInclude Include="OutputTable.h" />
     <ClInclude Include="Simulator.h" />
+    <ClInclude Include="SolutionUtility.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Notes.txt" />

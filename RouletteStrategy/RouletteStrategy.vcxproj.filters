@@ -45,5 +45,11 @@
     <ClInclude Include="Simulator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="SolutionUtility.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OutputTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

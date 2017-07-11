@@ -1,2 +1,10 @@
-Multithreading? Descending Win EV could be multithreaded from the first level
-Supplemental rolls? New table...
+1. Split up code into separate classes
+2. Multithread the descending winEV
+3. Add solution supplement feature
+.............................................................
+Do we want simulator to reset back to first bet after a bust or keep maxing out? Maybe a feature?
+Sim needs to reward for bankrolls that *more than double*
+Fixing last bet for descending Win EV may not be optimal.
+Negative profits at the end of descending Win EV may even be better
+Pattern recognition in descending Win EV
+MAIN: We still don't know why some strats are performing better than others.

@@ -69,6 +69,19 @@ public:
 			cerr << "Incorrect selection was made: " << modeChoice << endl;
 			exit(1);
 		}
+		char lowerBoundChoice;
+		cout << "Use lower bound to approximate number of rolls? Y or N: ";
+		cin >> lowerBoundChoice;
+		if ((lowerBoundChoice == 'Y') || (lowerBoundChoice == 'y') || (lowerBoundChoice == '1')) {
+			useLowerBound = true;
+		}
+		else if ((lowerBoundChoice == 'N') || (lowerBoundChoice == 'n') || (lowerBoundChoice == '0')) {
+			useLowerBound = false;
+		}
+		else {
+			cerr << "Incorrect selection was made: " << lowerBoundChoice << endl;
+			exit(1);
+		}
 
 		/*
 		cout << "std::thread::hardware_concurrency() has determined that your system has access to ";
@@ -257,10 +270,16 @@ private:
 	bool solutionUpdated;
 	bool allowBreakEven;
 	bool descendingWinEV;
+	bool useLowerBound;
 
 	void findMaxWinEVSum() {
-		total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
-		if (total_rolls == 1) {
+		if (useLowerBound) {
+			total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
+		}
+		else {
+			total_rolls = 1;
+		}
+		if (getLowestBoundRolls() == 1) {
 			best_stakes.resize(total_rolls);
 			best_stakes[0] = max_bet;
 			all_solutions.push_back(best_stakes);
@@ -299,7 +318,12 @@ private:
 	}
 
 	void findDescendingWinEVSolution() {
-		total_rolls = (getLowestBoundRolls() - payout_factor); //Really not a lowestBound in this case, just an approximation
+		if (useLowerBound) {
+			total_rolls = (getLowestBoundRolls() - payout_factor); //Really not a lowestBound in this case, just an approximation
+		}
+		else {
+			total_rolls = 1;
+		}
 		p_win_single = ((double)board_hits / (double)board_size);
 		construct_p_win_exacts();
 		bool limit_reached = false;
@@ -623,6 +647,7 @@ private:
 		solutionUpdated = false;
 		allowBreakEven = false;
 		descendingWinEV = false;
+		useLowerBound = false;
 	}
 };
 

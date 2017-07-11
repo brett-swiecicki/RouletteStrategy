@@ -183,6 +183,7 @@ public:
 		cout << "1: See the output table for a different number of rolls [DATA MAY NOT BE OPTIMAL!] " << endl;
 		cout << "2: Run simulations on this solution. " << endl;
 		cout << "3: Supplement this solution with an optimal solution from another table. " << endl;
+		cout << "4: Compute a different optimal strategy." << endl;
 		cout << "E: Exit optimal strategy finder." << endl;
 		cin >> taskMode;
 		if (taskMode == '1') {
@@ -193,6 +194,12 @@ public:
 			Simulator mySimulator = Simulator(all_solutions.back(), (int)all_solutions.back().size(), board_size, board_hits, payout_factor);
 			mySimulator.runSimulations();
 			mySimulator.query_for_additional_simulations();
+			queryForAdditionalTasks();
+		}
+		else if (taskMode == '4') {
+			clearPrivateData();
+			getInput();
+			findSolution();
 			queryForAdditionalTasks();
 		}
 		else if ((taskMode == 'E') || (taskMode == 'e')){
@@ -588,6 +595,34 @@ private:
 	void append_p_win_exacts() {
 		double p_loss_on_prior = pow((double)(1.0 - p_win_single), (double)p_win_exacts.size());
 		p_win_exacts.push_back(p_loss_on_prior * p_win_single);
+	}
+
+	void clearPrivateData() {
+		all_solutions.clear();
+		bets_to_indices.clear();
+		possible_bets.clear();
+		dynamic_solution.clear();
+		dynamic_EV_solution.clear();
+		best_stakes.clear();
+		best_stakes_EV.clear();
+		p_win_exacts.clear();
+		upper_bound_bets.clear();
+		mode = "";
+		best_win_EV_sum = 0.0;
+		min_bet = 0.0;
+		max_bet = 0.0;
+		min_increment = 0.0;
+		starting_cumulative = 0.0;
+		dynamic_profit = 0.0;
+		p_win_single = 0.0;
+		starting_stake = 0;
+		payout_factor = 0;
+		board_hits = 0;
+		board_size = 0;
+		total_rolls = 0;
+		solutionUpdated = false;
+		allowBreakEven = false;
+		descendingWinEV = false;
 	}
 };
 

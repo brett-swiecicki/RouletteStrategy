@@ -180,10 +180,10 @@ public:
 	void queryForAdditionalTasks() {
 		char taskMode;
 		cout << "Please select what you would like to do next: " << endl;
-		cout << "1: See the output table for another solution [DATA MAY NOT BE OPTIMAL!] " << endl;
-		cout << "2: Run simulations on the produced solution. " << endl;
+		cout << "1: See the output table for a different number of rolls [DATA MAY NOT BE OPTIMAL!] " << endl;
+		cout << "2: Run simulations on this solution. " << endl;
 		cout << "3: Supplement this solution with an optimal solution from another table. " << endl;
-		cout << "Q: Quit program." << endl;
+		cout << "E: Exit optimal strategy finder." << endl;
 		cin >> taskMode;
 		if (taskMode == '1') {
 			queryForAdditionalTables();
@@ -195,7 +195,7 @@ public:
 			mySimulator.query_for_additional_simulations();
 			queryForAdditionalTasks();
 		}
-		else if ((taskMode == 'Q') || (taskMode == 'q')){
+		else if ((taskMode == 'E') || (taskMode == 'e')){
 			return;
 		}
 		else {

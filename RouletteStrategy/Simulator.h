@@ -38,8 +38,12 @@ public:
 		pair<int, int> sim_results = hergieSim();
 		t = clock() - t;
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
-		cout << "Number of wins: " << sim_results.first << endl;
-		cout << "Number of losses: " << sim_results.second << endl;
+		int total = (sim_results.first + sim_results.second);
+		double win_percent = ((((double)sim_results.first)/((double)total)) * 100.0);
+		double loss_percent = ((((double)sim_results.second) / ((double)total)) * 100.0);
+		cout << std::setprecision(5);
+		cout << "Number of wins (minimum required bankroll doubled): " << sim_results.first << ", (" << win_percent << "%)." << endl;
+		cout << "Number of losses (minimum required bankroll hit $0.00): " << sim_results.second << ", (" << loss_percent << "%)." << endl;
 	}
 
 	void query_for_additional_simulations() {

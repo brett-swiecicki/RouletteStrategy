@@ -1,3 +1,2 @@
 Multithreading? Descending Win EV could be multithreaded from the first level
 Supplemental rolls? New table...
-Finish the simulator (TODO)

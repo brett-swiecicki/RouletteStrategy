@@ -19,6 +19,7 @@ int main() {
 	cout << "2: Run simulations on an existing strategy." << endl;
 	int mode;
 	cin >> mode;
+	cout << endl;
 	if (mode == 1) {
 		OptimalSolutionProcessor myProcessor;
 		myProcessor.getInput();

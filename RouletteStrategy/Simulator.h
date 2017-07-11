@@ -8,6 +8,7 @@
 #include <vector>
 #include <math.h>
 #include <time.h>
+#include <random>
 using namespace std;
 
 class Simulator {
@@ -32,9 +33,10 @@ public:
 	void runSimulations() {
 		clock_t t; //Start clock
 		t = clock();
+		cout << endl;
+		cout << "Currently running " << total_sims << " simulations..." << endl;
 		pair<int, int> sim_results = hergieSim();
 		t = clock() - t;
-		cout << "Currently running " << total_sims << " simulations..." << endl;
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
 		cout << "Number of wins: " << sim_results.first << endl;
 		cout << "Number of losses: " << sim_results.second << endl;
@@ -43,6 +45,7 @@ public:
 	void query_for_additional_simulations() {
 		char decision = 'Y';
 		while ((decision != 'N') && (decision != 'n') && (decision != '0')) {
+			cout << endl;
 			cout << "Would you like to run more simulations? Y or N: ";
 			cin >> decision;
 			if ((decision == 'Y') || (decision == 'y') || (decision == '1')) {
@@ -61,7 +64,7 @@ public:
 	}
 
 	void updateParameters() {
-		cout << "Enter how many roles your strategy can have before breaking: ";
+		cout << "Enter how many rolls your strategy can have before breaking: ";
 		cin >> total_rolls;
 		strat_stakes.resize(total_rolls);
 		cout << "Please enter each bet in order starting with the first: " << endl;
@@ -99,6 +102,10 @@ private:
 	double payout_factor;
 
 	pair<int, int> hergieSim() {
+		std::random_device rd;  //Will be used to obtain a seed for the random number engine
+		std::mt19937 engine(rd()); //Standard mersenne_twister_engine seeded with rd()
+		std::uniform_int_distribution<> dist(0, (board_size - 1));
+
 		pair<int, int> return_pair;
 		int num_wins = 0;
 		int num_losses = 0;
@@ -113,7 +120,10 @@ private:
 			dynamic_bankroll = bankroll; //reset the bankroll amount to run the whole strats
 			int roll_on_strat = 0;
 			while ((dynamic_bankroll > 0.0) && (dynamic_bankroll < (bankroll * 2))) {
-				int random_num = (rand() % board_size); // random_num in the range 0 to E 37 or A 38
+
+				//int random_num = (rand() % board_size); // random_num in the range 0 to E 37 or A 38
+				int random_num = dist(engine);
+
 				if (strat_stakes[roll_on_strat] <= dynamic_bankroll) { //Can you even make the bet?
 					bet = strat_stakes[roll_on_strat];
 					dynamic_bankroll -= bet;

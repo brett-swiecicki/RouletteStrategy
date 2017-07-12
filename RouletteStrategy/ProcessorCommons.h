@@ -33,7 +33,6 @@ public:
 	int current_table;
 	bool solutionUpdated;
 	bool allowBreakEven;
-	bool descendingWinEV;
 	bool useLowerBound;
 	bool useUpperBound;
 	bool fixStart;

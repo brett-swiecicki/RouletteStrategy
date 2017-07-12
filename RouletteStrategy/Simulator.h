@@ -44,6 +44,11 @@ public:
 		cout << std::setprecision(5);
 		cout << "Number of wins (minimum required bankroll doubled): " << sim_results.first << ", (" << win_percent << "%)." << endl;
 		cout << "Number of losses (minimum required bankroll hit $0.00): " << sim_results.second << ", (" << loss_percent << "%)." << endl;
+		cout << "Predicted ROI: " << (win_percent - loss_percent) << "%" << endl;
+	}
+
+	double getSimulationROI() {
+
 	}
 
 	void query_for_additional_simulations() {

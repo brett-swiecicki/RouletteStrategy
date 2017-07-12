@@ -44,10 +44,10 @@ public:
 		cout << "Descending Win EV or Maximum Win EV Sum? D or S: ";
 		cin >> modeChoice;
 		if ((modeChoice == 'D') || (modeChoice == 'd') || (modeChoice == '1')) {
-			osp_commons.descendingWinEV = true;
+			descendingWinEV = true;
 		}
 		else if ((modeChoice == 'S') || (modeChoice == 's') || (modeChoice == '0')) {
-			osp_commons.descendingWinEV = false;
+			descendingWinEV = false;
 			cout << "	Are break even bets acceptable? Y or N: ";
 			char breakEven;
 			cin >> breakEven;
@@ -131,7 +131,7 @@ public:
 		clock_t t; //Start Clock!
 		t = clock();
 		osp_commons.setupPossibleBets();
-		if (osp_commons.descendingWinEV == false) {
+		if (descendingWinEV == false) {
 			OptimalSumProcessor my_processor(osp_commons);
 			my_processor.findMaxWinEVSum();
 		}
@@ -180,6 +180,10 @@ public:
 		}
 	}
 
+private:
+	ProcessorCommons osp_commons;
+	bool descendingWinEV;
+
 	void queryForAdditionalTables() {
 		int smallest_roll_count = (int)osp_commons.all_solutions.front().size();
 		int largest_roll_count = (int)osp_commons.all_solutions.back().size();
@@ -200,9 +204,6 @@ public:
 			cin >> printMore;
 		}
 	}
-
-private:
-	ProcessorCommons osp_commons;
 };
 
 #endif

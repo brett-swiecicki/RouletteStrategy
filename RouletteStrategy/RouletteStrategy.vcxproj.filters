@@ -45,10 +45,10 @@
     <ClInclude Include="Simulator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="SolutionUtility.h">
+    <ClInclude Include="OutputTable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="OutputTable.h">
+    <ClInclude Include="ProcessorCommons.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

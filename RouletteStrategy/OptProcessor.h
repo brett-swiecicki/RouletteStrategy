@@ -12,6 +12,8 @@
 #include <time.h>
 #include <unordered_map>
 
+#include "OutputTable.h"
+#include "ProcessorCommons.h"
 #include "Simulator.h"
 
 using namespace std;
@@ -21,44 +23,44 @@ public:
 
 	void getInput() {
 		cout << "Enter the table minimum bet: ";
-		cin >> min_bet;
+		cin >> osp_commons.min_bet;
 		cout << "Enter the table maximum bet: ";
-		cin >> max_bet;
+		cin >> osp_commons.max_bet;
 		cout << "Enter the table minimum bet increment: ";
-		cin >> min_increment;
+		cin >> osp_commons.min_increment;
 		cout << "American or European? A or E: ";
 		char AmOrEur;
 		cin >> AmOrEur;
 		if ((AmOrEur == 'A') || (AmOrEur == 'a')) {
-			board_size = 38;
+			osp_commons.board_size = 38;
 		}
 		else if ((AmOrEur == 'E') || (AmOrEur == 'e')) {
-			board_size = 37;
+			osp_commons.board_size = 37;
 		}
 		else {
 			cerr << "Incorrect selection was made: " << AmOrEur << endl;
 			exit(1);
 		}
 		cout << "Enter the payout factor [__ to 1]: ";
-		cin >> payout_factor;
+		cin >> osp_commons.payout_factor;
 		cout << "Enter the number of winning table positions: ";
-		cin >> board_hits;
+		cin >> osp_commons.board_hits;
 		char modeChoice;
 		cout << "Descending Win EV or Maximum Win EV Sum? D or S: ";
 		cin >> modeChoice;
 		if ((modeChoice == 'D') || (modeChoice == 'd') || (modeChoice == '1')) {
-			descendingWinEV = true;
+			osp_commons.descendingWinEV = true;
 		}
 		else if ((modeChoice == 'S') || (modeChoice == 's') || (modeChoice == '0')) {
-			descendingWinEV = false;
+			osp_commons.descendingWinEV = false;
 			cout << "	Are break even bets acceptable? Y or N: ";
 			char breakEven;
 			cin >> breakEven;
 			if ((breakEven == 'Y') || (breakEven == 'y') || (breakEven == '1')) {
-				allowBreakEven = true;
+				osp_commons.allowBreakEven = true;
 			}
 			else if ((breakEven == 'N') || (breakEven == 'n') || (breakEven == '0')) {
-				allowBreakEven = false;
+				osp_commons.allowBreakEven = false;
 			}
 			else {
 				cerr << "Incorrect selection was made: " << breakEven << endl;
@@ -68,10 +70,10 @@ public:
 			cout << "	Would you like to compute the solution with the upper bound optimization? Y or N: ";
 			cin >> upperChoice;
 			if ((upperChoice == 'Y') || (upperChoice == 'y') || (upperChoice == '1')) {
-				useUpperBound = true;
+				osp_commons.useUpperBound = true;
 			}
 			else if ((upperChoice == 'N') || (upperChoice == 'n') || (upperChoice == '0')) {
-				useUpperBound = false;
+				osp_commons.useUpperBound = false;
 			}
 			else {
 				cerr << "Incorrect selection was made: " << upperChoice << endl;
@@ -81,10 +83,10 @@ public:
 			cout << "	Would you like to compute the solution with the early bets fixed at the minimum? Y or N: ";
 			cin >> fixChoice;
 			if ((fixChoice == 'Y') || (fixChoice == 'y') || (fixChoice == '1')) {
-				fixStart = true;
+				osp_commons.fixStart = true;
 			}
 			else if ((fixChoice == 'N') || (fixChoice == 'n') || (fixChoice == '0')) {
-				fixStart = false;
+				osp_commons.fixStart = false;
 			}
 			else {
 				cerr << "Incorrect selection was made: " << fixChoice << endl;
@@ -99,10 +101,10 @@ public:
 		cout << "	Use lower bound to approximate number of rolls? Y or N: ";
 		cin >> lowerBoundChoice;
 		if ((lowerBoundChoice == 'Y') || (lowerBoundChoice == 'y') || (lowerBoundChoice == '1')) {
-			useLowerBound = true;
+			osp_commons.useLowerBound = true;
 		}
 		else if ((lowerBoundChoice == 'N') || (lowerBoundChoice == 'n') || (lowerBoundChoice == '0')) {
-			useLowerBound = false;
+			osp_commons.useLowerBound = false;
 		}
 		else {
 			cerr << "Incorrect selection was made: " << lowerBoundChoice << endl;
@@ -133,8 +135,8 @@ public:
 	void findSolution() {
 		clock_t t; //Start Clock!
 		t = clock();
-		setupPossibleBets();
-		if (descendingWinEV == false) {
+		osp_commons.setupPossibleBets();
+		if (osp_commons.descendingWinEV == false) {
 			findMaxWinEVSum();
 		}
 		else {
@@ -142,82 +144,11 @@ public:
 		}
 		t = clock() - t; //Print running time!
 		cout << "Total running time: " << (((float)t) / (CLOCKS_PER_SEC)) << " seconds." << endl;
-		printOutputTable(((int)all_solutions.size()) - 1); //Convert to actual index
-	}
-
-	void printOutputTable(int index_to_print) {
-		cout << std::setprecision(2);
-		cout << std::fixed; //Disable scientific notation for large numbers
-		cout << endl;
-		const char separator = ' ';
-		printColumnHeaders();
-
-		double cumulative_stake = 0.0;
-		double p_win_single_roll = ((double)board_hits / (double)board_size);
-		double p_loss_single_roll = 1.0 - p_win_single_roll;
-		double p_loss_prev = 0;
-		double p_win_exact_sum = 0;
-		double p_lose_on_final = 0;
-		double loss_EV = 0;
-		double p_win_exact;
-		vector<double>& desired_solution = all_solutions[index_to_print]; //awwwww_sheetit
-		double desired_win_EV_sum = getWinEV(desired_solution);
-
-		for (int i = 0; i < (int)desired_solution.size(); ++i) {
-			//** Computations */
-			cumulative_stake += desired_solution[i];
-			double profit = (((payout_factor + 1) * desired_solution[i]) - cumulative_stake);
-
-			if (i != 0) {
-				p_win_exact = p_win_single_roll * p_loss_prev;
-				p_loss_prev = p_loss_prev * p_loss_single_roll;
-			}
-			else {
-				p_win_exact = p_win_single_roll;
-				p_loss_prev = p_loss_single_roll;
-			}
-			p_win_exact_sum += p_win_exact;
-			double win_EV = (profit * p_win_exact);
-
-			//** Output */
-			cout << std::setprecision(2);
-			cout << left << setw(6) << setfill(separator) << (i + 1); //Roll number
-			cout << left << setw(10) << setfill(separator) << (desired_solution[i]); //Stake
-			cout << left << setw(12) << setfill(separator) << cumulative_stake;
-			cout << left << setw(10) << setfill(separator) << profit;
-			cout << std::setprecision(5);
-			cout << left << setw(14) << setfill(separator) << p_win_exact;
-			cout << left << setw(18) << setfill(separator) << p_win_exact_sum;
-			if (i != ((int)desired_solution.size() - 1)) {
-				cout << left << setw(19) << setfill(separator) << "-------";
-			}
-			else {
-				cout << std::setprecision(5);
-				p_lose_on_final = 1.0 - p_win_exact_sum;
-				cout << left << setw(19) << setfill(separator) << p_lose_on_final;
-			}
-			cout << left << setw(10) << setfill(separator) << win_EV;
-
-			if (i != ((int)desired_solution.size() - 1)) {
-				cout << left << setw(11) << setfill(separator) << "-------";
-			}
-			else {
-				cout << std::setprecision(5);
-				loss_EV = p_lose_on_final * cumulative_stake;
-				cout << left << setw(11) << setfill(separator) << loss_EV;
-			}
-
-			cout << endl;
-		}
-
-		cout << endl;
-		cout << "Win EV Sum " << desired_win_EV_sum << endl;
-		cout << "Net EV " << (desired_win_EV_sum - loss_EV) << endl;
-		cout << endl;
+		osp_commons.printTable((((int)osp_commons.all_solutions.size()) - 1));
 	}
 
 	void queryForAdditionalTasks() {
-		current_table = ((int)all_solutions.size() - 1);
+		osp_commons.current_table = ((int)osp_commons.all_solutions.size() - 1);
 		char taskMode;
 		cout << "Please select what you would like to do next: " << endl;
 		cout << "	1: See the output table for a different number of rolls [DATA MAY NOT BE OPTIMAL!] " << endl;
@@ -231,13 +162,14 @@ public:
 			queryForAdditionalTasks();
 		}
 		else if (taskMode == '2') {
-			Simulator mySimulator = Simulator(all_solutions[current_table], (int)all_solutions.back().size(), board_size, board_hits, payout_factor);
+			Simulator mySimulator = Simulator(osp_commons.all_solutions[osp_commons.current_table], 
+				(int)osp_commons.all_solutions.back().size(), osp_commons.board_size, osp_commons.board_hits, osp_commons.payout_factor);
 			mySimulator.runSimulations();
 			mySimulator.query_for_additional_simulations();
 			queryForAdditionalTasks();
 		}
 		else if (taskMode == '4') {
-			clearPrivateData();
+			osp_commons.clearPrivateData();
 			getInput();
 			findSolution();
 			queryForAdditionalTasks();
@@ -252,17 +184,17 @@ public:
 	}
 
 	void queryForAdditionalTables() {
-		int smallest_roll_count = (int)all_solutions.front().size();
-		int largest_roll_count = (int)all_solutions.back().size();
+		int smallest_roll_count = (int)osp_commons.all_solutions.front().size();
+		int largest_roll_count = (int)osp_commons.all_solutions.back().size();
 		char printMore = 'Y';
 		while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
 			cout << "Enter the number of rolls for which you would like to see a solution (" << smallest_roll_count << " through " << largest_roll_count << "): ";
 			int desiredSolution;
 			cin >> desiredSolution;
 			if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
-				int actual_index = (((int)all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
-				printOutputTable(actual_index);
-				current_table = actual_index;
+				int actual_index = (((int)osp_commons.all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
+				osp_commons.printTable(actual_index);
+				osp_commons.current_table = actual_index;
 			}
 			else {
 				cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
@@ -273,81 +205,53 @@ public:
 	}
 
 private:
-	vector<vector<double>> all_solutions;
-	unordered_map<double, int> bets_to_indices;
-	vector<double> possible_bets;
-	vector<double> dynamic_solution;
-	vector<double> dynamic_EV_solution;
-	vector<double> best_stakes;
-	vector<double> best_stakes_EV;
-	vector<double> p_win_exacts;
-	vector<int> upper_bound_bets; //Inclusive
-	string mode;
-	double best_win_EV_sum;
-	double min_bet;
-	double max_bet;
-	double min_increment;
-	double starting_cumulative;
-	double dynamic_profit;
-	double p_win_single;
-	int starting_stake;
-	int payout_factor;
-	int board_hits;
-	int board_size;
-	int total_rolls;
-	int current_table;
-	bool solutionUpdated;
-	bool allowBreakEven;
-	bool descendingWinEV;
-	bool useLowerBound;
-	bool useUpperBound;
-	bool fixStart;
+	ProcessorCommons osp_commons;
 
 	void findMaxWinEVSum() {
-		if (useLowerBound) {
-			total_rolls = getLowestBoundRolls(); //Linear incrementation of total_rolls
+		if (osp_commons.useLowerBound) {
+			osp_commons.total_rolls = osp_commons.getLowestBoundRolls(); //Linear incrementation of total_rolls
 		}
 		else {
-			total_rolls = 1;
+			osp_commons.total_rolls = 1;
 		}
-		if (getLowestBoundRolls() == 1) {
-			best_stakes.resize(total_rolls);
-			best_stakes[0] = max_bet;
-			all_solutions.push_back(best_stakes);
-			printOutputTable(0);
+		if (osp_commons.getLowestBoundRolls() == 1) {
+			osp_commons.best_stakes.resize(osp_commons.total_rolls);
+			osp_commons.best_stakes[0] = osp_commons.max_bet;
+			osp_commons.all_solutions.push_back(osp_commons.best_stakes);
+			osp_commons.printTable(0);
 			return;
 		}
-		if (useUpperBound) {
-			constructUpperBounds();
+		if (osp_commons.useUpperBound) {
+			osp_commons.constructUpperBounds();
 		}
 		else {
 			//Set the upper bound vector to all max
-			upper_bound_bets.resize(total_rolls, (((int)possible_bets.size()) - 1));
+			osp_commons.upper_bound_bets.resize(osp_commons.total_rolls, (((int)osp_commons.possible_bets.size()) - 1));
 		}
 		bool limit_reached = false;
-		mode = "Phase1";
+		osp_commons.mode = "Phase1";
 		while (limit_reached == false) {
-			prepDynamicSolution();
-			solutionUpdated = false;
-			cout << "Currently computing strategies for " << total_rolls << " rolls.";
-			if (allowBreakEven) {
-				solutionFindRecBreakEven(starting_stake, starting_cumulative, 0);
+			osp_commons.prepDynamicSolution();
+			osp_commons.solutionUpdated = false;
+			cout << "Currently computing strategies for " << osp_commons.total_rolls << " rolls.";
+			if (osp_commons.allowBreakEven) {
+				solutionFindRecBreakEven(osp_commons.starting_stake, osp_commons.starting_cumulative, 0);
 			}
 			else {
-				solutionFindRecNoBreakEven(starting_stake, starting_cumulative, 0);
+				solutionFindRecNoBreakEven(osp_commons.starting_stake, osp_commons.starting_cumulative, 0);
 			}
-			++total_rolls;
-			if (solutionUpdated == false) {
-				if (mode == "Phase2") {
+			++osp_commons.total_rolls;
+			if (osp_commons.solutionUpdated == false) {
+				if (osp_commons.mode == "Phase2") {
 					limit_reached = true;
 				}
 				cout << endl;
 			}
 			else {
-				all_solutions.push_back(best_stakes);
-				appendUpperBounds();
-				if (mode == "Phase1") {
-					mode = "Phase2";
+				osp_commons.all_solutions.push_back(osp_commons.best_stakes);
+				osp_commons.appendUpperBounds();
+				if (osp_commons.mode == "Phase1") {
+					osp_commons.mode = "Phase2";
 				}
 				cout << " Solution found!" << endl;
 			}
@@ -355,30 +259,30 @@ private:
 	}
 
 	void findDescendingWinEVSolution() {
-		if (useLowerBound) {
-			total_rolls = (getLowestBoundRolls() - payout_factor); //Really not a lowestBound in this case, just an approximation
+		if (osp_commons.useLowerBound) {
+			osp_commons.total_rolls = (osp_commons.getLowestBoundRolls() - osp_commons.payout_factor); //Really not a lowestBound in this case, just an approximation
 		}
 		else {
-			total_rolls = 1;
+			osp_commons.total_rolls = 1;
 		}
-		p_win_single = ((double)board_hits / (double)board_size);
-		construct_p_win_exacts();
+		osp_commons.p_win_single = ((double)osp_commons.board_hits / (double)osp_commons.board_size);
+		osp_commons.construct_p_win_exacts();
 		bool limit_reached = false;
 		bool decreasing = false;
 		while (limit_reached == false) {
-			solutionUpdated = false;
-			cout << "Currently computing strategies for " << total_rolls << " rolls." << endl;
-			dynamic_solution.resize(total_rolls);
-			dynamic_EV_solution.resize(total_rolls);
+			osp_commons.solutionUpdated = false;
+			cout << "Currently computing strategies for " << osp_commons.total_rolls << " rolls." << endl;
+			osp_commons.dynamic_solution.resize(osp_commons.total_rolls);
+			osp_commons.dynamic_EV_solution.resize(osp_commons.total_rolls);
 			solutionFindDescendingWinEV(0, 0.0, 0);
-			if (solutionUpdated == false) {
-				if (total_rolls == 2) { //If there can only be one bet then it must be table max
-					best_stakes.resize(1);
-					best_stakes[0] = possible_bets[possible_bets.size() - 1];
-					all_solutions.push_back(best_stakes);
+			if (osp_commons.solutionUpdated == false) {
+				if (osp_commons.total_rolls == 2) { //If there can only be one bet then it must be table max
+					osp_commons.best_stakes.resize(1);
+					osp_commons.best_stakes[0] = osp_commons.possible_bets[osp_commons.possible_bets.size() - 1];
+					osp_commons.all_solutions.push_back(osp_commons.best_stakes);
 				}
-				if (all_solutions.empty()) {
-					--total_rolls;
+				if (osp_commons.all_solutions.empty()) {
+					--osp_commons.total_rolls;
 					decreasing = true;
 				}
 				else {
@@ -386,9 +290,9 @@ private:
 				}
 			}
 			else {
-				all_solutions.push_back(best_stakes);
-				append_p_win_exacts();
-				++total_rolls;
+				osp_commons.all_solutions.push_back(osp_commons.best_stakes);
+				osp_commons.append_p_win_exacts();
+				++osp_commons.total_rolls;
 				if (decreasing) {
 					limit_reached = true;
 				}
@@ -398,22 +302,22 @@ private:
 
 	void solutionFindDescendingWinEV(int stake_number, double cumulative_stake, int lastAddedBet) {
 		//New invariant: bets at the end can be break even, but others can't
-		if (stake_number == (total_rolls - 1)) {
+		if (stake_number == (osp_commons.total_rolls - 1)) {
 			//First, need to fix the last bet as the table max:
-			dynamic_solution[stake_number] = max_bet;
-			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, max_bet);
-			if (dynamic_EV_solution[stake_number] >= 0.0) {
-				if (dynamic_solution.size() > best_stakes.size()) { //More rolls -> better solution
-					best_stakes = dynamic_solution;
-					best_stakes_EV = dynamic_EV_solution;
-					solutionUpdated = true;
+			osp_commons.dynamic_solution[stake_number] = osp_commons.max_bet;
+			osp_commons.dynamic_EV_solution[stake_number] = osp_commons.singleRollEV(stake_number, cumulative_stake, osp_commons.max_bet);
+			if (osp_commons.dynamic_EV_solution[stake_number] >= 0.0) {
+				if (osp_commons.dynamic_solution.size() > osp_commons.best_stakes.size()) { //More rolls -> better solution
+					osp_commons.best_stakes = osp_commons.dynamic_solution;
+					osp_commons.best_stakes_EV = osp_commons.dynamic_EV_solution;
+					osp_commons.solutionUpdated = true;
 				}
 				else { //Same number of rolls -> //Check EV one by one
-					for (int i = 0; i < (int)dynamic_solution.size(); ++i) {
-						if (best_stakes_EV[i] < dynamic_EV_solution[i]) {
-							best_stakes = dynamic_solution;
-							best_stakes_EV = dynamic_EV_solution;
-							solutionUpdated = true;
+					for (int i = 0; i < (int)osp_commons.dynamic_solution.size(); ++i) {
+						if (osp_commons.best_stakes_EV[i] < osp_commons.dynamic_EV_solution[i]) {
+							osp_commons.best_stakes = osp_commons.dynamic_solution;
+							osp_commons.best_stakes_EV = osp_commons.dynamic_EV_solution;
+							osp_commons.solutionUpdated = true;
 							break;
 						}
 					}
@@ -421,280 +325,65 @@ private:
 			}
 			return;
 		}
-		for (int i = lastAddedBet; i < (int)possible_bets.size(); ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			dynamic_EV_solution[stake_number] = singleRollEV(stake_number, cumulative_stake, possible_bets[i]);
-			if ((stake_number == 0) ||((dynamic_EV_solution[stake_number] <= dynamic_EV_solution[stake_number - 1]) && (dynamic_EV_solution[stake_number] >= 0.0))){
-				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + possible_bets[i], i);
+		for (int i = lastAddedBet; i < (int)osp_commons.possible_bets.size(); ++i) {
+			osp_commons.dynamic_solution[stake_number] = osp_commons.possible_bets[i];
+			osp_commons.dynamic_EV_solution[stake_number] = osp_commons.singleRollEV(stake_number, cumulative_stake, osp_commons.possible_bets[i]);
+			if ((stake_number == 0) || ((osp_commons.dynamic_EV_solution[stake_number] <= osp_commons.dynamic_EV_solution[stake_number - 1]) && 
+				(osp_commons.dynamic_EV_solution[stake_number] >= 0.0))) {
+				solutionFindDescendingWinEV(stake_number + 1, cumulative_stake + osp_commons.possible_bets[i], i);
 			}
-			else if (dynamic_EV_solution[stake_number] > dynamic_EV_solution[stake_number - 1]) {
+			else if (osp_commons.dynamic_EV_solution[stake_number] > osp_commons.dynamic_EV_solution[stake_number - 1]) {
 				break; //This makes it so EV is descending
 			}
 		}
 	}
 
 	void solutionFindRecBreakEven(int stake_number, double cumulative_stake, int lastBetAdded) {
-		if (stake_number == (total_rolls - 1)) {
-			dynamic_solution[stake_number] = max_bet;
-			cumulative_stake += max_bet;
-			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake);
+		if (stake_number == (osp_commons.total_rolls - 1)) {
+			osp_commons.dynamic_solution[stake_number] = osp_commons.max_bet;
+			cumulative_stake += osp_commons.max_bet;
+			bool profitable = osp_commons.checkIfProfitableBreakEven(osp_commons.dynamic_solution, stake_number, cumulative_stake);
 			if (profitable) {
-				double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-				if ((dynamic_solution.size() > best_stakes.size()) ||
-					(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-					best_stakes = dynamic_solution;
-					best_win_EV_sum = dynamic_win_EV_sum;
-					solutionUpdated = true;
+				double dynamic_win_EV_sum = osp_commons.getWinEV(osp_commons.dynamic_solution);
+				if ((osp_commons.dynamic_solution.size() > osp_commons.best_stakes.size()) ||
+					(((osp_commons.dynamic_solution.size() == osp_commons.best_stakes.size()) && (dynamic_win_EV_sum > osp_commons.best_win_EV_sum)))) {
+					osp_commons.best_stakes = osp_commons.dynamic_solution;
+					osp_commons.best_win_EV_sum = dynamic_win_EV_sum;
+					osp_commons.solutionUpdated = true;
 				}
 			}
 			return;
 		}
 
-		for (int i = lastBetAdded; i <= upper_bound_bets[stake_number]; ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitableBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+		for (int i = lastBetAdded; i <= osp_commons.upper_bound_bets[stake_number]; ++i) {
+			osp_commons.dynamic_solution[stake_number] = osp_commons.possible_bets[i];
+			bool profitable = osp_commons.checkIfProfitableBreakEven(osp_commons.dynamic_solution, stake_number, cumulative_stake + osp_commons.possible_bets[i]);
 			if (profitable) {
-				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
+				solutionFindRecBreakEven(stake_number + 1, cumulative_stake + osp_commons.possible_bets[i], i);
 			}
 		}
 	}
 
 	void solutionFindRecNoBreakEven(int stake_number, double cumulative_stake, int lastBetAdded) {
-		if (stake_number == total_rolls) {
-			double dynamic_win_EV_sum = getWinEV(dynamic_solution);
-			if ((dynamic_solution.size() > best_stakes.size()) ||
-				(((dynamic_solution.size() == best_stakes.size()) && (dynamic_win_EV_sum > best_win_EV_sum)))) {
-				best_stakes = dynamic_solution;
-				best_win_EV_sum = dynamic_win_EV_sum;
-				solutionUpdated = true;
+		if (stake_number == osp_commons.total_rolls) {
+			double dynamic_win_EV_sum = osp_commons.getWinEV(osp_commons.dynamic_solution);
+			if ((osp_commons.dynamic_solution.size() > osp_commons.best_stakes.size()) ||
+				(((osp_commons.dynamic_solution.size() == osp_commons.best_stakes.size()) && (dynamic_win_EV_sum > osp_commons.best_win_EV_sum)))) {
+				osp_commons.best_stakes = osp_commons.dynamic_solution;
+				osp_commons.best_win_EV_sum = dynamic_win_EV_sum;
+				osp_commons.solutionUpdated = true;
 			}
 			return;
 		}
-		for (int i = lastBetAdded; i <= upper_bound_bets[stake_number]; ++i) {
-			dynamic_solution[stake_number] = possible_bets[i];
-			bool profitable = checkIfProfitableNoBreakEven(dynamic_solution, stake_number, cumulative_stake + possible_bets[i]);
+		for (int i = lastBetAdded; i <= osp_commons.upper_bound_bets[stake_number]; ++i) {
+			osp_commons.dynamic_solution[stake_number] = osp_commons.possible_bets[i];
+			bool profitable = osp_commons.checkIfProfitableNoBreakEven(osp_commons.dynamic_solution, stake_number, cumulative_stake + osp_commons.possible_bets[i]);
 			if (profitable) {
-				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + possible_bets[i], i);
+				solutionFindRecNoBreakEven(stake_number + 1, cumulative_stake + osp_commons.possible_bets[i], i);
 			}
 		}
 	}
 
-	bool checkIfProfitableBreakEven(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
-		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
-		if (profit < 0) {
-			return false;
-		}
-		return true;
-	}
-
-	bool checkIfProfitableNoBreakEven(const vector<double> &stakes_in, int stake_number, double cumulative_stake) {
-		double profit = (((payout_factor + 1) * stakes_in[stake_number]) - cumulative_stake);
-		if (profit <= 0) {
-			return false;
-		}
-		return true;
-	}
-
-	double getWinEV(const vector<double> &stakes_in) {
-		double winEVsum = 0;
-		double p_win_single_roll = ((double)board_hits / (double)board_size);
-		double p_loss_single_roll = 1.0 - p_win_single_roll;
-
-		double cumulative_stake = 0.0;
-		double p_loss_prev;
-		double p_win_exact_roll;
-
-		for (int i = 0; i < (int)stakes_in.size(); ++i) {
-			cumulative_stake += stakes_in[i];
-			double profit = (((payout_factor + 1) * stakes_in[i]) - cumulative_stake);
-			if (i != 0) {
-				p_win_exact_roll = p_win_single_roll * p_loss_prev;
-				p_loss_prev = p_loss_prev * p_loss_single_roll;
-			}
-			else {
-				p_win_exact_roll = p_win_single_roll;
-				p_loss_prev = p_loss_single_roll;
-			}
-
-			winEVsum += (p_win_exact_roll * profit);
-		}
-		return winEVsum;
-	}
-	
-	void printColumnHeaders() {
-		const char separator = ' ';
-		cout << left << setw(6) << setfill(separator) << "Roll";
-		cout << left << setw(10) << setfill(separator) << "Stake";
-		cout << left << setw(12) << setfill(separator) << "Cum. Stake";
-		cout << left << setw(10) << setfill(separator) << "Profit";
-		cout << left << setw(14) << setfill(separator) << "p(win exact)";
-		cout << left << setw(18) << setfill(separator) << "Sum p(win exact)";
-		cout << left << setw(19) << setfill(separator) << "p(lose on final)";
-		cout << left << setw(10) << setfill(separator) << "Win EV";
-		cout << left << setw(11) << setfill(separator) << "Loss EV";
-		cout << endl;
-		for (int i = 0; i < 107; ++i) {
-			cout << "=";
-		}
-		cout << endl;
-	}
-
-	int getLowestBoundRolls() {
-		int num_rolls = 0;
-		double betFactor = 1 + (1.0 / (double)payout_factor);
-		double bet = min_bet;
-		while (bet <= max_bet) {
-			++num_rolls;
-			bet *= betFactor;
-		}
-		return num_rolls;
-	}
-
-	void setupPossibleBets() {
-		double insertBet = min_bet;
-		int index = 0;
-		while (insertBet <= max_bet) {
-			possible_bets.push_back(insertBet);
-			bets_to_indices[insertBet] = index;
-			insertBet += min_increment;
-			++index;
-		}
-		if (possible_bets.back() != max_bet) {
-			possible_bets.push_back(max_bet);
-			bets_to_indices[max_bet] = index;
-		}
-	}
-
-	void prepDynamicSolution() {
-		dynamic_solution.resize(total_rolls);
-		starting_cumulative = 0.0;
-
-		if (fixStart) {
-			if (total_rolls >= ((payout_factor * 2) + 2)) {
-				//First payout_factor + 1 numbers can be set to min
-				if (allowBreakEven) {
-					starting_stake = (payout_factor + 1);
-					for (int i = 0; i < (payout_factor + 1); ++i) {
-						dynamic_solution[i] = min_bet;
-						starting_cumulative += min_bet;
-					}
-				}
-				else {
-					starting_stake = payout_factor;
-					for (int i = 0; i < payout_factor; ++i) {
-						dynamic_solution[i] = min_bet;
-						starting_cumulative += min_bet;
-					}
-				}
-			}
-			else {
-				starting_stake = 1;
-				dynamic_solution[0] = min_bet;
-				starting_cumulative += min_bet;
-			}
-		}
-		else {
-			starting_stake = 0;
-			starting_cumulative = 0.0;
-		}
-	}
-
-	void constructUpperBounds() {
-		upper_bound_bets.resize(total_rolls);
-		for (int i = 0; i < total_rolls; ++i) {
-			double raw_upper_bound = pow((1.0 + (1.0/(double)payout_factor)), i); //Calculate raw y = (1 + (1/payout_factor))^x
-			double rounded_upper_bound = roundUp(raw_upper_bound);
-			if ((rounded_upper_bound >= min_bet) && (rounded_upper_bound <= max_bet)) {
-				int index = bets_to_indices[rounded_upper_bound];
-				upper_bound_bets[i] = index;
-			}
-			else if (rounded_upper_bound > max_bet) { //Set to max_bet
-				upper_bound_bets[i] = (((int)possible_bets.size()) - 1);
-			}
-			else { //Set to min_bet
-				upper_bound_bets[i] = 0;
-			}
-		}
-	}
-
-	void appendUpperBounds() {
-		if (upper_bound_bets[total_rolls - 2] == (((int)possible_bets.size()) - 1)) {
-			upper_bound_bets.push_back(((int)possible_bets.size()) - 1); //The last upper bound bet should usually be the max_bet
-		}
-		else {
-			double raw_upper_bound = pow((1.0 + (1.0 / (double)payout_factor)), (double)upper_bound_bets.size()); //Calculate raw y = (1 + (1/payout_factor))^x
-			double rounded_upper_bound = roundUp(raw_upper_bound);
-			if (rounded_upper_bound > max_bet) {
-				upper_bound_bets.push_back(((int)possible_bets.size()) - 1);
-			}
-			else {
-				int index = bets_to_indices[rounded_upper_bound];
-				upper_bound_bets.push_back(index);
-			}
-		}
-	}
-
-	double roundUp(double num_to_round) {
-		double remainder = fmod(num_to_round, min_increment);
-		if (remainder != 0.0) {
-			return (num_to_round + min_increment - remainder);
-		}
-		else {
-			return num_to_round;
-		}
-	}
-
-	double singleRollEV(int stake_number, double cumulative_stake, double bet_in) {
-		double profit = (((payout_factor + 1) * bet_in) - cumulative_stake - bet_in);
-		return (p_win_exacts[stake_number] * profit);
-	}
-
-	void construct_p_win_exacts() {
-		//This function is fucked!!!
-		p_win_exacts.resize(total_rolls);
-		p_win_exacts[0] = p_win_single;
-		for (int i = 1; i < (int)p_win_exacts.size(); ++i) {
-			double p_loss_on_prior = pow((double)(1.0 - p_win_single), (double)i);
-			p_win_exacts[i] = (p_loss_on_prior * p_win_single);
-		}
-	}
-
-	void append_p_win_exacts() {
-		double p_loss_on_prior = pow((double)(1.0 - p_win_single), (double)p_win_exacts.size());
-		p_win_exacts.push_back(p_loss_on_prior * p_win_single);
-	}
-
-	void clearPrivateData() {
-		all_solutions.clear();
-		bets_to_indices.clear();
-		possible_bets.clear();
-		dynamic_solution.clear();
-		dynamic_EV_solution.clear();
-		best_stakes.clear();
-		best_stakes_EV.clear();
-		p_win_exacts.clear();
-		upper_bound_bets.clear();
-		mode = "";
-		best_win_EV_sum = 0.0;
-		min_bet = 0.0;
-		max_bet = 0.0;
-		min_increment = 0.0;
-		starting_cumulative = 0.0;
-		dynamic_profit = 0.0;
-		p_win_single = 0.0;
-		starting_stake = 0;
-		payout_factor = 0;
-		board_hits = 0;
-		board_size = 0;
-		total_rolls = 0;
-		current_table = 0;
-		solutionUpdated = false;
-		allowBreakEven = false;
-		descendingWinEV = false;
-		useLowerBound = false;
-		useUpperBound = false;
-		fixStart = false;
-	}
 };
 
 #endif

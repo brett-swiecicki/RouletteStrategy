@@ -1,10 +1,16 @@
-1. Split up code into separate classes
-2. Multithread the descending winEV
-3. Add solution supplement feature
+1. Multithread the descending winEV
+2. Add solution supplement feature
 .............................................................
 Do we want simulator to reset back to first bet after a bust or keep maxing out? Maybe a feature?
-Sim needs to reward for bankrolls that *more than double*
-Fixing last bet for descending Win EV may not be optimal.
-Negative profits at the end of descending Win EV may even be better
 Pattern recognition in descending Win EV
 MAIN: We still don't know why some strats are performing better than others.
+.............................................................
+7/11 Update: Run every permuation through the sim and return what is best.
+Everything would have to be profitable (not break even)
+Should again terminate once the solution hasn't be updated
+Absolutely has to be multithreaded
+Maybe even from a small output I will be able to determine what the pattern is.
+Should run with 100,000, then run with 1,000,000 if in a range, then maybe even run 5,000,000 if within a closer range.
+The simulator also needs to account for surplus wins.
+
+Run it on an Amazon Web Services Instance

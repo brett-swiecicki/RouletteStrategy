@@ -31,6 +31,7 @@ public:
 	int board_size;
 	int total_rolls;
 	int current_table;
+	int num_threads;
 	bool solutionUpdated;
 	bool allowBreakEven;
 	bool useLowerBound;

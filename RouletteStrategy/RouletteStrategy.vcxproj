@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="OptController.h" />
     <ClInclude Include="OptDescendingProcessor.h" />
+    <ClInclude Include="OptimalSimProcessor.h" />
     <ClInclude Include="OptSumProcessor.h" />
     <ClInclude Include="OutputTable.h" />
     <ClInclude Include="ProcessorCommons.h" />

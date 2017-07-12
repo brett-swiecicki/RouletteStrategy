@@ -57,5 +57,8 @@
     <ClInclude Include="OptDescendingProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="OptimalSimProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

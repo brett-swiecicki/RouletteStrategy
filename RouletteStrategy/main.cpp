@@ -44,8 +44,8 @@ int main() {
 
 void printModes() {
 	cout << "Please select a mode: " << endl;
-	cout << "1: Compute a new optimal strategy." << endl;
-	cout << "2: Run simulations on an existing strategy." << endl;
-	cout << "3: Supplement an existing strategy with a new table strategy." << endl;
-	cout << "Q: Quit application." << endl;
+	cout << "	1: Compute a new optimal strategy." << endl;
+	cout << "	2: Run simulations on an existing strategy." << endl;
+	cout << "	3: Supplement an existing strategy with a new table strategy." << endl;
+	cout <<	"	Q: Quit application." << endl;
 }

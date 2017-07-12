@@ -51,7 +51,7 @@ public:
 		}
 		else if ((modeChoice == 'S') || (modeChoice == 's') || (modeChoice == '0')) {
 			descendingWinEV = false;
-			cout << "Are break even bets acceptable? Y or N: ";
+			cout << "	Are break even bets acceptable? Y or N: ";
 			char breakEven;
 			cin >> breakEven;
 			if ((breakEven == 'Y') || (breakEven == 'y') || (breakEven == '1')) {
@@ -64,13 +64,39 @@ public:
 				cerr << "Incorrect selection was made: " << breakEven << endl;
 				exit(1);
 			}
+			char upperChoice;
+			cout << "	Would you like to compute the solution with the upper bound optimization? Y or N: ";
+			cin >> upperChoice;
+			if ((upperChoice == 'Y') || (upperChoice == 'y') || (upperChoice == '1')) {
+				useUpperBound = true;
+			}
+			else if ((upperChoice == 'N') || (upperChoice == 'n') || (upperChoice == '0')) {
+				useUpperBound = false;
+			}
+			else {
+				cerr << "Incorrect selection was made: " << upperChoice << endl;
+				exit(1);
+			}
+			char fixChoice;
+			cout << "	Would you like to compute the solution with the early bets fixed at the minimum? Y or N: ";
+			cin >> fixChoice;
+			if ((fixChoice == 'Y') || (fixChoice == 'y') || (fixChoice == '1')) {
+				fixStart = true;
+			}
+			else if ((fixChoice == 'N') || (fixChoice == 'n') || (fixChoice == '0')) {
+				fixStart = false;
+			}
+			else {
+				cerr << "Incorrect selection was made: " << fixChoice << endl;
+				exit(1);
+			}
 		}
 		else {
 			cerr << "Incorrect selection was made: " << modeChoice << endl;
 			exit(1);
 		}
 		char lowerBoundChoice;
-		cout << "Use lower bound to approximate number of rolls? Y or N: ";
+		cout << "	Use lower bound to approximate number of rolls? Y or N: ";
 		cin >> lowerBoundChoice;
 		if ((lowerBoundChoice == 'Y') || (lowerBoundChoice == 'y') || (lowerBoundChoice == '1')) {
 			useLowerBound = true;
@@ -191,20 +217,21 @@ public:
 	}
 
 	void queryForAdditionalTasks() {
+		current_table = ((int)all_solutions.size() - 1);
 		char taskMode;
 		cout << "Please select what you would like to do next: " << endl;
-		cout << "1: See the output table for a different number of rolls [DATA MAY NOT BE OPTIMAL!] " << endl;
-		cout << "2: Run simulations on this solution. " << endl;
-		cout << "3: Supplement this solution with an optimal solution from another table. " << endl;
-		cout << "4: Compute a different optimal strategy." << endl;
-		cout << "E: Exit optimal strategy finder." << endl;
+		cout << "	1: See the output table for a different number of rolls [DATA MAY NOT BE OPTIMAL!] " << endl;
+		cout <<	"	2: Run simulations on this solution. " << endl;
+		cout << "	3: Supplement this solution with an optimal solution from another table. " << endl;
+		cout << "	4: Compute a different optimal strategy." << endl;
+		cout << "	E: Exit optimal strategy finder." << endl;
 		cin >> taskMode;
 		if (taskMode == '1') {
 			queryForAdditionalTables();
 			queryForAdditionalTasks();
 		}
 		else if (taskMode == '2') {
-			Simulator mySimulator = Simulator(all_solutions.back(), (int)all_solutions.back().size(), board_size, board_hits, payout_factor);
+			Simulator mySimulator = Simulator(all_solutions[current_table], (int)all_solutions.back().size(), board_size, board_hits, payout_factor);
 			mySimulator.runSimulations();
 			mySimulator.query_for_additional_simulations();
 			queryForAdditionalTasks();
@@ -235,6 +262,7 @@ public:
 			if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
 				int actual_index = (((int)all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
 				printOutputTable(actual_index);
+				current_table = actual_index;
 			}
 			else {
 				cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
@@ -267,10 +295,13 @@ private:
 	int board_hits;
 	int board_size;
 	int total_rolls;
+	int current_table;
 	bool solutionUpdated;
 	bool allowBreakEven;
 	bool descendingWinEV;
 	bool useLowerBound;
+	bool useUpperBound;
+	bool fixStart;
 
 	void findMaxWinEVSum() {
 		if (useLowerBound) {
@@ -286,7 +317,13 @@ private:
 			printOutputTable(0);
 			return;
 		}
-		constructUpperBounds();
+		if (useUpperBound) {
+			constructUpperBounds();
+		}
+		else {
+			//Set the upper bound vector to all max
+			upper_bound_bets.resize(total_rolls, (((int)possible_bets.size()) - 1));
+		}
 		bool limit_reached = false;
 		mode = "Phase1";
 		while (limit_reached == false) {
@@ -532,27 +569,33 @@ private:
 		dynamic_solution.resize(total_rolls);
 		starting_cumulative = 0.0;
 
-		if (total_rolls >= ((payout_factor * 2) + 2)) {
-			//First payout_factor + 1 numbers can be set to min
-			if (allowBreakEven) {
-				starting_stake = (payout_factor + 1);
-				for (int i = 0; i < (payout_factor + 1); ++i) {
-					dynamic_solution[i] = min_bet;
-					starting_cumulative += min_bet;
+		if (fixStart) {
+			if (total_rolls >= ((payout_factor * 2) + 2)) {
+				//First payout_factor + 1 numbers can be set to min
+				if (allowBreakEven) {
+					starting_stake = (payout_factor + 1);
+					for (int i = 0; i < (payout_factor + 1); ++i) {
+						dynamic_solution[i] = min_bet;
+						starting_cumulative += min_bet;
+					}
+				}
+				else {
+					starting_stake = payout_factor;
+					for (int i = 0; i < payout_factor; ++i) {
+						dynamic_solution[i] = min_bet;
+						starting_cumulative += min_bet;
+					}
 				}
 			}
 			else {
-				starting_stake = payout_factor;
-				for (int i = 0; i < payout_factor; ++i) {
-					dynamic_solution[i] = min_bet;
-					starting_cumulative += min_bet;
-				}
+				starting_stake = 1;
+				dynamic_solution[0] = min_bet;
+				starting_cumulative += min_bet;
 			}
 		}
 		else {
-			starting_stake = 1;
-			dynamic_solution[0] = min_bet;
-			starting_cumulative += min_bet;
+			starting_stake = 0;
+			starting_cumulative = 0.0;
 		}
 	}
 
@@ -644,10 +687,13 @@ private:
 		board_hits = 0;
 		board_size = 0;
 		total_rolls = 0;
+		current_table = 0;
 		solutionUpdated = false;
 		allowBreakEven = false;
 		descendingWinEV = false;
 		useLowerBound = false;
+		useUpperBound = false;
+		fixStart = false;
 	}
 };
 

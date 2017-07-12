@@ -115,7 +115,9 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OptProcessor.h" />
+    <ClInclude Include="OptController.h" />
+    <ClInclude Include="OptDescendingProcessor.h" />
+    <ClInclude Include="OptSumProcessor.h" />
     <ClInclude Include="OutputTable.h" />
     <ClInclude Include="ProcessorCommons.h" />
     <ClInclude Include="Simulator.h" />

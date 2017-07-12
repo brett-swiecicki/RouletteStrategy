@@ -39,9 +39,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OptProcessor.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Simulator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -49,6 +46,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ProcessorCommons.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OptController.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OptSumProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OptDescendingProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

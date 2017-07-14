@@ -19,6 +19,7 @@ public:
 	vector<int> upper_bound_bets; //Inclusive
 	string mode;
 	double best_win_EV_sum;
+	double best_ROI;
 	double min_bet;
 	double max_bet;
 	double min_increment;
@@ -236,7 +237,6 @@ public:
 		current_table = 0;
 		solutionUpdated = false;
 		allowBreakEven = false;
-		descendingWinEV = false;
 		useLowerBound = false;
 		useUpperBound = false;
 		fixStart = false;

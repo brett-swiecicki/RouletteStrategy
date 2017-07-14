@@ -234,21 +234,16 @@ private:
 	void queryForAdditionalTables() {
 		int smallest_roll_count = (int)osp_commons.all_solutions.front().size();
 		int largest_roll_count = (int)osp_commons.all_solutions.back().size();
-		char printMore = 'Y';
-		while ((printMore != 'N') && (printMore != 'n') && (printMore != '0')) {
-			cout << "Enter the number of rolls for which you would like to see a solution (" << smallest_roll_count << " through " << largest_roll_count << "): ";
-			int desiredSolution;
-			cin >> desiredSolution;
-			if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
-				int actual_index = (((int)osp_commons.all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
-				osp_commons.printTable(actual_index);
-				osp_commons.current_table = actual_index;
-			}
-			else {
-				cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
-			}
-			cout << "Would you like to see the output for another solution? Y or N: ";
-			cin >> printMore;
+		cout << "Enter the number of rolls for which you would like to see a solution (" << smallest_roll_count << " through " << largest_roll_count << "): ";
+		int desiredSolution;
+		cin >> desiredSolution;
+		if ((desiredSolution >= smallest_roll_count) && (desiredSolution <= largest_roll_count)) {
+			int actual_index = (((int)osp_commons.all_solutions.size()) - (largest_roll_count - desiredSolution) - 1);
+			osp_commons.printTable(actual_index);
+			osp_commons.current_table = actual_index;
+		}
+		else {
+			cout << "Sorry! " << desiredSolution << " does not have a computed solution!" << endl;
 		}
 	}
 };

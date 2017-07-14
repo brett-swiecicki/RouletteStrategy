@@ -60,5 +60,8 @@
     <ClInclude Include="OptimalSimProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="SimSolution.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

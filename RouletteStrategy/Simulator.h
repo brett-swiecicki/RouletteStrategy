@@ -30,6 +30,9 @@ public:
 		cin >> total_sims;
 	}
 
+	Simulator(int board_size_in, int board_hits_in, double payout_factor_in) 
+		: board_size(board_size_in), board_hits(board_hits_in), payout_factor(payout_factor_in){}
+
 	void runSimulations() {
 		clock_t t; //Start clock
 		t = clock();
@@ -47,8 +50,14 @@ public:
 		cout << "Predicted ROI: " << (win_percent - loss_percent) << "%" << endl;
 	}
 
-	double getSimulationROI() {
-
+	double getSimulationROI(vector<double>& strat_stakes_in, int total_sims_in) {
+		total_rolls = (int)strat_stakes_in.size();
+		strat_stakes = strat_stakes_in; //THIS COULD BE BAD!
+		pair<int, int> sim_results = hergieSim();
+		int total = (sim_results.first + sim_results.second);
+		double win_percent = ((((double)sim_results.first) / ((double)total)) * 100.0);
+		double loss_percent = ((((double)sim_results.second) / ((double)total)) * 100.0);
+		return (win_percent - loss_percent);
 	}
 
 	void query_for_additional_simulations() {
@@ -126,13 +135,11 @@ private:
 		double bet;
 		int sim_count = 0;
 		while (sim_count < total_sims) {
-			dynamic_bankroll = bankroll; //reset the bankroll amount to run the whole strats
+			dynamic_bankroll = bankroll; //reset the bankroll amount to run the whole strat
 			int roll_on_strat = 0;
 			while ((dynamic_bankroll > 0.0) && (dynamic_bankroll < (bankroll * 2))) {
-
 				//int random_num = (rand() % board_size); // random_num in the range 0 to E 37 or A 38
 				int random_num = dist(engine);
-
 				if (strat_stakes[roll_on_strat] <= dynamic_bankroll) { //Can you even make the bet?
 					bet = strat_stakes[roll_on_strat];
 					dynamic_bankroll -= bet;

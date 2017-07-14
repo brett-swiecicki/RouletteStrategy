@@ -3,63 +3,56 @@
 #define OPTSIM_H
 
 #include <future>
-#include <mutex>
 #include <thread>
 
 #include "ProcessorCommons.h"
+#include "SimSolution.h"
 using namespace std;
-
-class Solution {
-public:
-	void submit_best_solution_candidate(vector<double>& solution_in, double ROI_in) {
-		std::lock_guard<std::mutex> guard(best_stakes_mutex);
-		//Flag if updated, stop updating when latest best ROI is 1% less than the absolute best
-		updated = true;
-	}
-	vector<vector<double>>& get_all_solutions() {
-		return best_stakes;
-	}
-
-	double get_latest_ROI() {
-		return best_ROIs.back();
-	}
-	bool updated;
-private:
-	vector<vector<double>> best_stakes;
-	vector<double> best_ROIs;
-	std::mutex best_stakes_mutex;
-};
 
 
 class SimStakeFinder {
+public:
+	SimStakeFinder(ProcessorCommons& p_commons_in, Solution* global_sol_in)
+		: osp_commons(p_commons_in), global_threads_solution(global_sol_in) 
+	{
+		my_local_sim = Simulator(osp_commons.board_size, osp_commons.board_hits, osp_commons.payout_factor);
+	} //Overloaded constructor for local data copies
 
-	SimStakeFinder() {} //Overloaded constructor for local data copies
-
-	void set_parameters_for_processing(vector<int>& starting_bets_in) {
+	void set_parameters_for_processing(vector<int>& starting_bets_in, int total_rolls_in) {
 		starting_bets = starting_bets_in;
+		osp_commons.total_rolls = total_rolls_in;
 	}
 
 	void operator()() {
+		osp_commons.best_ROI = -100.0;
 		for (int i = 0; i < (int)starting_bets.size(); ++i) { //Loop through everything to update local solution
 			solution_find_max_ROI_rec(0, 0.0, starting_bets[i]);
 		}
-		global_threads_solution.submit_best_solution_candidate(best_solution, best_ROI); //Update global solution
+		global_threads_solution->submit_best_solution_candidate(osp_commons.best_stakes, osp_commons.best_ROI); //Update global solution
 	}
 	
-private: //Needs local copies of everything required
-	Solution& global_threads_solution;
+private:
 	ProcessorCommons osp_commons;
+	Simulator my_local_sim;
+	Solution* global_threads_solution;
 	vector<int> starting_bets;
-	double best_ROI;
-	int payout_factor;
-	int total_rolls;
 
 	void solution_find_max_ROI_rec(int stake_number, double cumulative_stake, int lastBetAdded) {
-		if (stake_number == total_rolls) {
-
+		if (stake_number == osp_commons.total_rolls) {
+			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 10000); //10,000 sims
+			if (dynamic_ROI > (osp_commons.best_ROI + .5)) {
+				osp_commons.best_ROI = dynamic_ROI;
+				osp_commons.best_stakes = osp_commons.dynamic_solution;
+			}
+			else if ((dynamic_ROI > (osp_commons.best_ROI - .5))) {
+				double new_dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 100000); //100,000 sims
+				if (new_dynamic_ROI > osp_commons.best_ROI) {
+					osp_commons.best_ROI = new_dynamic_ROI;
+					osp_commons.best_stakes = osp_commons.dynamic_solution;
+				}
+			}
 			return;
 		}
-
 		for (int i = lastBetAdded; i < (int)osp_commons.possible_bets.size(); ++i) {
 			osp_commons.dynamic_solution[stake_number] = osp_commons.possible_bets[i];
 			bool profitable = osp_commons.checkIfProfitableNoBreakEven(osp_commons.dynamic_solution, stake_number, cumulative_stake + osp_commons.possible_bets[i]);
@@ -109,24 +102,24 @@ private:
 
 	void refreshStakeFinders() { //This will be the function that has to partition the work among each stakeFinder object
 		//1. Make the starting_bets vectors for each task vector
-		vector<vector<int>> starting_bet_vectors(num_threads);
+		vector<vector<int>> starting_bet_vectors(osp_commons.num_threads);
 		int vec_to_push = 0;
-		for (int i = 0; i < (int)local_parameters.possible_bets.size(); ++i) {
+		for (int i = 0; i < (int)osp_commons.possible_bets.size(); ++i) {
 			starting_bet_vectors[vec_to_push].push_back(i);
 			++vec_to_push;
-			if (vec_to_push == (int)num_threads) {
+			if (vec_to_push == osp_commons.num_threads) {
 				vec_to_push = 0;
 			}
 		}
 		//2.Update the task objects in the task vector
 		for (int j = 0; j < ((int)tasks_vector.size()); ++j) {
-			tasks_vector[j].setParametersForProcessing(dynamic_solution_start, starting_bet_vectors[j], total_rolls);
+			tasks_vector[j].set_parameters_for_processing(starting_bet_vectors[j], osp_commons.total_rolls);
 		}
 	}
 
 	void buildTasksVector() {
-		tasks_vector.resize(num_threads, stakeFinder(&optimalSolution, local_parameters));
-		threads.resize(num_threads);
+		tasks_vector.resize(osp_commons.num_threads, SimStakeFinder(osp_commons, &global_threads_solution));
+		threads.resize(osp_commons.num_threads);
 	}
 
 };

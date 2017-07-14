@@ -41,25 +41,10 @@ private:
 
 	void solution_find_max_ROI_rec(int stake_number, double cumulative_stake, int lastBetAdded) {
 		if (stake_number == osp_commons.total_rolls) {
-			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 100000); //100,000 sims
-			if (dynamic_ROI > (osp_commons.best_ROI + .5)) {
-				if (osp_commons.best_ROI == -100.0) {
-					//Can't let anything slide in without first doing 100,000 sims
-					double new_dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 100000); //100,000 sims
-					osp_commons.best_ROI = new_dynamic_ROI;
-					osp_commons.best_stakes = osp_commons.dynamic_solution;
-				}
-				else {
-					osp_commons.best_ROI = dynamic_ROI;
-					osp_commons.best_stakes = osp_commons.dynamic_solution;
-				}
-			}
-			else if ((dynamic_ROI > (osp_commons.best_ROI - .5))) {
-				double new_dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 200000); //200,000 sims
-				if (new_dynamic_ROI > osp_commons.best_ROI) {
-					osp_commons.best_ROI = new_dynamic_ROI;
-					osp_commons.best_stakes = osp_commons.dynamic_solution;
-				}
+			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 200000); //200,000 sims
+			if (dynamic_ROI > (osp_commons.best_ROI)) {
+				osp_commons.best_ROI = dynamic_ROI;
+				osp_commons.best_stakes = osp_commons.dynamic_solution;
 			}
 			return;
 		}

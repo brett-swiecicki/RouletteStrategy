@@ -14,8 +14,7 @@ public:
 			if (!(best_stakes.empty())) {
 				if (best_stakes.back().size() == solution_in.size()) {
 					//Need to compare ROIs
-					if (ROI_in > best_ROIs.back() + .5) {
-						//Can set without double checking
+					if (ROI_in > best_ROIs.back()) {
 						best_ROIs.back() = ROI_in;
 						best_stakes.back() = solution_in;
 						updated = true;
@@ -25,10 +24,6 @@ public:
 						else if (ROI_in < all_time_best_ROI - 1.0) {
 							updated = false;
 						}
-					}
-					else if (ROI_in > best_ROIs.back() - .5) {
-						//Need to double check before setting
-						//This is going to need like 200,000 or so sims
 					}
 				}
 				else { //First solution for this roll count so have to do another push_back

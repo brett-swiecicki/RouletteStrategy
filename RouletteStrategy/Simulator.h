@@ -14,10 +14,12 @@ using namespace std;
 class Simulator {
 public:
 
-	Simulator() { //Default constructor gets all input from user
-		updateParameters();
-		cout << "Please enter the total number of simulations you would like to run: ";
-		cin >> total_sims;
+	Simulator(bool get_data = false) { //Default constructor gets all input from user
+		if (get_data) {
+			updateParameters();
+			cout << "Please enter the total number of simulations you would like to run: ";
+			cin >> total_sims;
+		}
 	}
 
 	Simulator(vector<double>& strat_stakes_in, int total_rolls_in, int board_size_in, int board_hits_in, double payout_factor_in) {
@@ -53,6 +55,7 @@ public:
 	double getSimulationROI(vector<double>& strat_stakes_in, int total_sims_in) {
 		total_rolls = (int)strat_stakes_in.size();
 		strat_stakes = strat_stakes_in; //THIS COULD BE BAD!
+		total_sims = total_sims_in;
 		pair<int, int> sim_results = hergieSim();
 		int total = (sim_results.first + sim_results.second);
 		double win_percent = ((((double)sim_results.first) / ((double)total)) * 100.0);

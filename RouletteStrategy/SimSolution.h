@@ -28,7 +28,7 @@ public:
 					}
 					else if (ROI_in > best_ROIs.back() - .5) {
 						//Need to double check before setting
-						//SKIPPING FOR NOW!
+						//This is going to need like 200,000 or so sims
 					}
 				}
 				else { //First solution for this roll count so have to do another push_back

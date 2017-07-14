@@ -23,7 +23,7 @@ int main() {
 			myProcessor.queryForAdditionalTasks();
 		}
 		else if (mode == '2') {
-			Simulator mySimulator;
+			Simulator mySimulator(true);
 			mySimulator.runSimulations();
 			mySimulator.query_for_additional_simulations();
 		}

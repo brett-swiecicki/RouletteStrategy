@@ -7,6 +7,7 @@
 
 #include "ProcessorCommons.h"
 #include "SimSolution.h"
+#include "Simulator.h"
 using namespace std;
 
 
@@ -25,6 +26,7 @@ public:
 
 	void operator()() {
 		osp_commons.best_ROI = -100.0;
+		osp_commons.dynamic_solution.resize(osp_commons.total_rolls);
 		for (int i = 0; i < (int)starting_bets.size(); ++i) { //Loop through everything to update local solution
 			solution_find_max_ROI_rec(0, 0.0, starting_bets[i]);
 		}
@@ -39,13 +41,21 @@ private:
 
 	void solution_find_max_ROI_rec(int stake_number, double cumulative_stake, int lastBetAdded) {
 		if (stake_number == osp_commons.total_rolls) {
-			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 10000); //10,000 sims
+			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 100000); //100,000 sims
 			if (dynamic_ROI > (osp_commons.best_ROI + .5)) {
-				osp_commons.best_ROI = dynamic_ROI;
-				osp_commons.best_stakes = osp_commons.dynamic_solution;
+				if (osp_commons.best_ROI == -100.0) {
+					//Can't let anything slide in without first doing 100,000 sims
+					double new_dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 100000); //100,000 sims
+					osp_commons.best_ROI = new_dynamic_ROI;
+					osp_commons.best_stakes = osp_commons.dynamic_solution;
+				}
+				else {
+					osp_commons.best_ROI = dynamic_ROI;
+					osp_commons.best_stakes = osp_commons.dynamic_solution;
+				}
 			}
 			else if ((dynamic_ROI > (osp_commons.best_ROI - .5))) {
-				double new_dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 100000); //100,000 sims
+				double new_dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 200000); //200,000 sims
 				if (new_dynamic_ROI > osp_commons.best_ROI) {
 					osp_commons.best_ROI = new_dynamic_ROI;
 					osp_commons.best_stakes = osp_commons.dynamic_solution;
@@ -78,6 +88,9 @@ public:
 			findSolutionWithThreads();
 			if (global_threads_solution.updated) {
 				cout << " Solution found with " << global_threads_solution.get_latest_ROI() << "% ROI." << endl;
+			}
+			else {
+				cout << endl;
 			}
 			++osp_commons.total_rolls;
 		}

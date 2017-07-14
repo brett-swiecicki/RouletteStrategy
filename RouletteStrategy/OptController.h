@@ -107,9 +107,9 @@ public:
 	}
 
 	void get_sim_specific_data() {
-		cout << "std::thread::hardware_concurrency() has determined that your system has access to ";
+		cout << "	std::thread::hardware_concurrency() has determined that your system has access to ";
 		cout << std::thread::hardware_concurrency() << " threads." << endl;
-		cout << "Do you believe this number is accurate? Y or N: ";
+		cout << "	Do you believe this number is accurate? Y or N: ";
 		char useHardwareConcurrency;
 		cin >> useHardwareConcurrency;
 		if ((useHardwareConcurrency == 'Y') || (useHardwareConcurrency == 'y') || (useHardwareConcurrency == '1')) {

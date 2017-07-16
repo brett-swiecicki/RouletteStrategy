@@ -41,7 +41,7 @@ private:
 
 	void solution_find_max_ROI_rec(int stake_number, double cumulative_stake, int lastBetAdded) {
 		if (stake_number == osp_commons.total_rolls) {
-			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, 200000); //200,000 sims
+			double dynamic_ROI = my_local_sim.getSimulationROI(osp_commons.dynamic_solution, osp_commons.num_sims); //User specified number of simulations
 			if (dynamic_ROI > (osp_commons.best_ROI)) {
 				osp_commons.best_ROI = dynamic_ROI;
 				osp_commons.best_stakes = osp_commons.dynamic_solution;

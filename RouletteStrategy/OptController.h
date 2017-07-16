@@ -123,6 +123,8 @@ public:
 			cerr << "Incorrect selection was made: " << useHardwareConcurrency << endl;
 			exit(1);
 		}
+		cout << "	How many simulations would you like to run on each potential solution? ";
+		cin >> osp_commons.num_sims;
 	}
 
 	void get_descending_specific_data() {

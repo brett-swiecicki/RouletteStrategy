@@ -2,6 +2,7 @@
 #ifndef PROCESSORCOMMONS_H
 #define PROCESSORCOMMONS_H
 
+#include <math.h>
 #include <unordered_map>
 #include "OutputTable.h"
 using namespace std;
@@ -33,6 +34,7 @@ public:
 	int total_rolls;
 	int current_table;
 	int num_threads;
+	int num_sims;
 	bool solutionUpdated;
 	bool allowBreakEven;
 	bool useLowerBound;

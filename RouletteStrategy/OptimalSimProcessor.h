@@ -70,6 +70,7 @@ public:
 		while (global_threads_solution.updated) {
 			global_threads_solution.updated = false;
 			cout << "Currently computing strategies for " << osp_commons.total_rolls << " rolls.";
+			cout << flush;
 			findSolutionWithThreads();
 			if (global_threads_solution.updated) {
 				cout << " Solution found with " << global_threads_solution.get_latest_ROI() << "% ROI." << endl;

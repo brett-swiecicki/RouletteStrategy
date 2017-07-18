@@ -37,6 +37,7 @@ public:
 			osp_commons.prepDynamicSolution();
 			osp_commons.solutionUpdated = false;
 			cout << "Currently computing strategies for " << osp_commons.total_rolls << " rolls.";
+			cout << flush;
 			if (osp_commons.allowBreakEven) {
 				solutionFindRecBreakEven(osp_commons.starting_stake, osp_commons.starting_cumulative, 0);
 			}

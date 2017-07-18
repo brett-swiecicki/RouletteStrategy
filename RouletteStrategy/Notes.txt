@@ -15,3 +15,36 @@ The simulator also needs to account for surplus wins.
 Will probably want to print out best ROI found so progress can be monitored.
 
 Run it on an Amazon Web Services Instance
+............................................................
+7/16 Update: Going to run on Google Cloud Compute Enginer VM Instance
+Will use Debian image as it is most stable and lightweight.
+Google Cloud was chosen over AWS since AWS only allows you to create predefined instances
+while Google Cloud Platform allows you to totally customize an instance.
+Google Cloud Platform lets you specify your own number of vCPU's and memory plus
+gives you $300.00 credit just for singing up.
+
+Current questions:
+	Does the Google Debian Image contain a C++ compiler? After you do the install.
+	How do you connect to the VM instance? In browser console? SSH? Just use the Chrome extension for SSH with cloud platform.
+	Will it keep running if the network connection is interupted? See below.
+
+If issues persist then about the only thing left to do is improve the parallelization mechanism.
+
+After making Debian instance:
+	sudo apt-get install build-essential
+
+To keep running even when logged out or after connection interruption:
+	1. screen
+	2. run program in "new" terminal window
+	3. use "send key shortcut" to enter CTRL+A
+	4. immediately press d to detach screen
+	5. can now logout or experience connection interruption
+	6. screen -r
+
+	To see all screens: screen -ls
+		There are screens on:
+		7849.pts-0.mint (10/06/2013 01:50:45 PM)        (Detached)
+		5561.pts-0.mint (10/06/2013 11:12:05 AM)        (Detached)
+	To choose a screen from a list to resume: screen -r 7849
+
+	To kill screen: CTRL+A immediately followed by 'k'

@@ -123,7 +123,7 @@ public:
 			cerr << "Incorrect selection was made: " << useHardwareConcurrency << endl;
 			exit(1);
 		}
-		cout << "	How many simulations would you like to run on each potential solution? ";
+		cout << "	How many simulations would you like to run on each potential solution? [Recommended: 250,000] ";
 		cin >> osp_commons.num_sims;
 	}
 

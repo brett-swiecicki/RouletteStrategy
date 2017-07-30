@@ -48,3 +48,12 @@ To keep running even when logged out or after connection interruption:
 	To choose a screen from a list to resume: screen -r 7849
 
 	To kill screen: CTRL+A immediately followed by 'k'
+
+To easily download all files from repo onto linux terminal: 
+	1. sudo apt-get install git-core
+	2. https://help.github.com/articles/cloning-a-repository/
+
+Google Cloud Platform tops out at 64 vCPU instances. AWS EC2 instances go up to 128.
+
+Program improvement: work per thread could increase at a linear or exponential rate.
+Have program record number of tests performed for each starting bet?

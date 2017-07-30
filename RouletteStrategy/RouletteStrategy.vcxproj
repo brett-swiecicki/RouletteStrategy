@@ -120,6 +120,7 @@
     <ClInclude Include="OptimalSimProcessor.h" />
     <ClInclude Include="OptSumProcessor.h" />
     <ClInclude Include="OutputTable.h" />
+    <ClInclude Include="PlaythroughSimulator.h" />
     <ClInclude Include="ProcessorCommons.h" />
     <ClInclude Include="SimSolution.h" />
     <ClInclude Include="Simulator.h" />

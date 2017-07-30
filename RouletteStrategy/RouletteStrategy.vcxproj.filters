@@ -63,5 +63,8 @@
     <ClInclude Include="SimSolution.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="PlaythroughSimulator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

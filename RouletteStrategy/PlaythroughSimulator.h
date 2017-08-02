@@ -2,6 +2,7 @@
 #ifndef PLAYTHROUGHSIMULATOR_H
 #define PLAYTHROUGHSIMULATOR_H
 
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <time.h>
@@ -22,9 +23,18 @@ public:
 		clock_t t = clock(); //Start clock
 		cout << endl;
 		cout << "Currently running " << total_sims << " simulations..." << endl;
-		//Run sims
+		slycickSim();
+		cout << std::setprecision(5);
 		printRuntime(t);
-		//Print results
+		int total = num_finishes + num_busts;
+		double finish_percent = ((((double)num_finishes) / ((double)total)) * 100.0);
+		double bust_percent = ((((double)num_busts) / ((double)total)) * 100.0);
+		double average_final_finish = getAverageFinalFinish();
+		cout << std::setprecision(5);
+		cout << "Number of times playthrough requirement was reached: " << num_finishes << ", (" << finish_percent << "%)." << endl;
+		cout << "Number of times starting bankroll hit $0.00: " << num_busts << ", (" << bust_percent << "%)." << endl;
+		cout << std::setprecision(2);
+		cout << "Average final amount when playthrough requirement was reached: $" << average_final_finish << endl;
 	}
 
 	void updateParameters() {
@@ -99,14 +109,7 @@ private:
 						roll_on_strat = 0;
 					}
 				}
-
-				//Check bounds here
-				if (dynamic_bankroll >= upper_bound) {
-					upper_bound = dynamic_bankroll + min_bankroll;
-					lower_bound = dynamic_bankroll - min_bankroll;
-					roll_on_strat = 0;
-				}
-				else if (dynamic_bankroll == lower_bound) {
+				if ((dynamic_bankroll >= upper_bound) || (dynamic_bankroll == lower_bound)) {
 					upper_bound = dynamic_bankroll + min_bankroll;
 					lower_bound = dynamic_bankroll - min_bankroll;
 					if (lower_bound < 0) {
@@ -114,7 +117,6 @@ private:
 					}
 					roll_on_strat = 0;
 				}
-
 			} // End of simulation
 
 			if (dynamic_bankroll <= 0.0) {
@@ -221,6 +223,14 @@ private:
 		cout << (int)seconds << " Seconds" << endl;
 	}
 	
+	double getAverageFinalFinish() {
+		double finish_sum = 0.0;
+		for (int i = 0; i < (int)final_amounts.size(); ++i) {
+			finish_sum += final_amounts[i];
+		}
+		return ((finish_sum) / ((double)final_amounts.size()));
+	}
+
 };
 
 #endif

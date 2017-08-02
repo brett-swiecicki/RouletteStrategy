@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include "OptController.h"
+#include "PlaythroughSimulator.h"
 #include "Simulator.h"
 using namespace std;
 
@@ -27,6 +28,10 @@ int main() {
 			mySimulator.runSimulations();
 			mySimulator.query_for_additional_simulations();
 		}
+		else if (mode == '3') {
+			PlaythroughSimulator myPlaythroughSim(true);
+			myPlaythroughSim.runSimulations();
+		}
 		else {
 			cout << "Sorry! That mode is not available at this time." << endl;
 		}
@@ -41,6 +46,7 @@ void printModes() {
 	cout << "Please select a mode: " << endl;
 	cout << "	1: Compute a new optimal strategy." << endl;
 	cout << "	2: Run simulations on an existing strategy." << endl;
-	cout << "	3: Supplement an existing strategy with a new table strategy." << endl;
+	cout << "	3: Run simulations on an existing strategy with playthrough requirements for bonus." << endl;
+	cout << "	4: Supplement an existing strategy with a new table strategy." << endl;
 	cout <<	"	Q: Quit application." << endl;
 }

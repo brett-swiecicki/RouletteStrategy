@@ -148,7 +148,7 @@ private:
 					dynamic_bankroll -= bet;
 				}
 				else {
-					bet = bankroll;
+					bet = dynamic_bankroll;
 					dynamic_bankroll -= bet;
 				}
 				if (random_num < board_hits) { //HIT!

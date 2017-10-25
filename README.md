@@ -16,7 +16,7 @@ This part of the program can be utilized to produce a new progressive betting st
 
    This mode will find the absolute most optimal progressive betting strategy for a table by running every single permuation of possible bets through the simulator and saving the result with the greatest ROI. As you can imagine, running every single permutation of bets through the simulator takes a lot of time to compute. The application attempts to reduce the time by utlizing a multithreaded implementation, but it can still take a long time to produce quality output. The benefit to this however is the output is absolutely certain to be the best possible solution.
   
-   **All outputs from the optimal strategy solution finder can be immediately tested in the accompanying simulator to determine expected ROI in the long term by running a large number of simulations ( > 1,000,000).**
+**All outputs from the optimal strategy solution finder can be immediately tested in the accompanying simulator to determine expected ROI in the long term by running a large number of simulations ( > 1,000,000).**
 
 ## Run Simulations On An Existing Strategy
 This part of the program allows a user to test a custom progressive betting strategy on any table for a defined number of simulations.

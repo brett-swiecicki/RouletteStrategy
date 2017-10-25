@@ -7,10 +7,13 @@ This program can be used to produce and test progressive roulette betting strate
 This part of the program can be utilized to produce a new progressive betting strategy using one of three different computation protocols.
 
 1. Maximize Win EV Sum
+
    This mode will print to the screen a sequence of bets in a table that maximizes the sum of the column for expected value on wins.
 2. Descending Win EV
+
    This mode will print to the screen a sequence of bets in a table for progressive betting. The expected value on wins for each roll must be lower than the expected value on wins for the roll before it. The expected value on wins for each roll is then maximized while adhering to this constraint.
 3. Simulator Optimal ROI
+
    This mode will find the absolute most optimal progressive betting strategy for a table by running every single permuation of possible bets through the simulator and saving the result with the greatest ROI. As you can imagine, running every single permutation of bets through the simulator takes a lot of time to compute. The application attempts to reduce the time by utlizing a multithreaded implementation, but it can still take a long time to produce quality output. The benefit to this however is the output is absolutely certain to be the best possible solution.
   
 **All outputs from the optimal strategy solution finder can be immediately tested in the accompanying simulator to determine expected ROI in the long term by running a large number of simulations ( > 1,000,000).**

@@ -1,5 +1,5 @@
 # RouletteStrategy
-This program can be used to produce and test progressive roulette betting strategies on any spot on any table. The program contains three major features.
+This program can be used to produce and test progressive roulette betting strategies on any spot on any table. The program contains three major features. There is a fourth feature that was intended to be implemented, but never was after fixing a bug in the simulator revealed that none of the solutions produced had positive long term expectation.
 
 **If you have any questions about the program feel free to email me at _brettcs@umich.edu_ and I will respond to your request as soon as I can.**
 

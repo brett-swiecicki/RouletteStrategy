@@ -1,7 +1,7 @@
 # RouletteStrategy
 This program can be used to produce and test progressive roulette betting strategies on any spot on any table. The program contains three major features.
 
-** If you have any questions about the program feel free to email me at _brettcs@umich.edu_ and I will respond to your request as soon as I can. **
+**If you have any questions about the program feel free to email me at _brettcs@umich.edu_ and I will respond to your request as soon as I can.**
 
 ## Compute An Optimal Strategy
 This part of the program can be utilized to produce and new progressive betting strategy using one of three different computation protocols.
@@ -13,7 +13,7 @@ This part of the program can be utilized to produce and new progressive betting 
 3. Simulator Optimal ROI
   - This mode will find the absolute most optimal progressive betting strategy for a table by running every single permuation of possible bets through the simulator and saving the result with the greatest ROI. As you can imagine, running every single permutation of bets through the simulator takes a lot of time to compute. The application attempts to reduce the time by utlizing a multithreaded implementation, but it can still take a long time to produce quality output. The benefit to this however is the output is absolutely certain to be the best possible solution.
   
-**  All outputs from the optimal strategy solution finder can be immediately tested in the accompanying simulator to determine expected ROI in the long term by running a large number of simulations ( > 1,000,000). **
+**All outputs from the optimal strategy solution finder can be immediately tested in the accompanying simulator to determine expected ROI in the long term by running a large number of simulations ( > 1,000,000).**
 
 ## Run Simulations On An Existing Strategy
 This part of the program allows a user to test a custom progressive betting strategy on any table for a defined number of simulations.

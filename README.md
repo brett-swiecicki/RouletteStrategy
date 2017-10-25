@@ -25,3 +25,6 @@ This part of the program allows a user to test a custom progressive betting stra
 This part of the program allows a user to test a custom progressive betting strategy. The user is asked for an initial bankroll and bonus offerings from the casino that is to be tested. The program will then output how many times the bonus money was played through enabling the user to withdraw from the casino with profit and how many times the bankroll went bust or was played through, but didn't enable the user to withdraw with profit.
 
 If you are unaware of how online casino bonuses work, read up on the terms and conditions for bonuses at a popular site like _bovada.lv_. Many online casinos offer deposit bonuses of up to 300%, but that money has to be "played through" to allow a user to withdraw funds. On a game with a relative low house edge like roulette, this playthrough is often prorated down to 5%, making a simulator such as this very handy to determine long-term expectation.
+
+## Supplement an existing strategy with a new table strategy.
+This mode is currently not available. This mode will likely never be implemented since fixing a bug in the simulator revealed that no solutions produced under any computation protocols will ever have positive long term expectation, proving the original probablity theory correct.
